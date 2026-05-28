@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-bg text-ink font-sans;
+    margin: 0;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans font-semibold text-ink;
+    letter-spacing: -0.01em;
+  }
+
+  input, textarea, select {
+    @apply font-mono;
+  }
+
+  *:focus-visible {
+    @apply outline-none ring-2 ring-primary/40 ring-offset-2 ring-offset-bg;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-surface border border-line rounded-xl shadow-card;
+  }
+
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      #eef2f6 0px,
+      #f6f9fc 200px,
+      #eef2f6 400px
+    );
+    background-size: 800px 100%;
+    @apply animate-shimmer rounded;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium;
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg
+           bg-primary text-white font-medium shadow-sm
+           hover:bg-blue-800 active:bg-blue-900 transition
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg
+           bg-white text-ink border border-line font-medium
+           hover:bg-bg transition
+           disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 px-3 py-2 rounded-lg
+           text-ink-muted hover:bg-bg hover:text-ink transition;
+  }
+
+  .input {
+    @apply w-full px-3 py-2.5 rounded-lg border border-line bg-white
+           font-mono text-sm text-ink
+           placeholder:text-ink-muted/60
+           focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-ink mb-1.5 font-sans;
+  }
+}
