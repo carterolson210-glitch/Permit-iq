@@ -3,7 +3,8 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
 import { FREE_SCAN_LIMIT } from '../lib/auth'
-import { scaleIn, StatusBanner } from '../lib/motion'
+import { StatusBanner } from '../lib/motion'
+import { scaleIn } from '../lib/motionVariants'
 
 type Mode = 'signup' | 'signin' | 'forgot'
 
@@ -12,7 +13,9 @@ const MIN_PASSWORD_LENGTH = 8
 export default function Login() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const next = searchParams.get('next') ?? '/analyze'
+  // Only allow same-app paths as the post-login destination.
+  const rawNext = searchParams.get('next') ?? '/analyze'
+  const next = rawNext.startsWith('/') && !rawNext.startsWith('//') ? rawNext : '/analyze'
   const sessionExpired = searchParams.get('expired') === '1'
 
   const [mode, setMode] = useState<Mode>('signup')

@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { supabase, isSupabaseConfigured } from '../lib/supabase'
-import { AnimatedCheck, scaleIn, StatusBanner } from '../lib/motion'
+import { AnimatedCheck, StatusBanner } from '../lib/motion'
+import { scaleIn } from '../lib/motionVariants'
 
 const MIN_PASSWORD_LENGTH = 8
 

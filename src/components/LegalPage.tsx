@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { fadeUp, staggerChildren } from '../lib/motion'
+import { fadeUp, staggerChildren } from '../lib/motionVariants'
 
 /**
  * Shared shell for the Privacy Policy and Terms of Service pages, including

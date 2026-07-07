@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { fadeUp, staggerChildren } from '../lib/motion'
+import { fadeUp, staggerChildren } from '../lib/motionVariants'
 import { useAuth } from '../lib/auth'
 
 export default function Landing() {
@@ -77,20 +77,21 @@ export default function Landing() {
               placeholder="e.g. I want to build a 400 sq ft deck attached to my house in Marblehead MA"
               className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-base shadow-sm placeholder:text-slate-400 focus:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-700/30 resize-none"
             />
-            <button
+            <motion.button
+              whileTap={{ scale: 0.98 }}
               onClick={handleSubmit}
               className="mt-6 w-full inline-flex items-center justify-center rounded-lg bg-blue-700 px-6 py-3.5 text-base font-semibold text-white shadow hover:bg-blue-800 transition"
             >
               Get My Permit Checklist
-            </button>
+            </motion.button>
             <p className="mt-4 text-center text-sm text-slate-500">
               <span className="inline-flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-green-600" />
-                Works for all 351 MA cities and towns
+                3 free scans with a new account — no credit card required
               </span>
             </p>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </section>
 
       {/* HOW IT WORKS */}
@@ -120,9 +121,13 @@ export default function Landing() {
                 title: 'Get your complete checklist',
                 body: 'Receive the full list of forms, documents, fees, and contacts — ready to submit.',
               },
-            ].map((step) => (
-              <li
+            ].map((step, i) => (
+              <motion.li
                 key={step.n}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: '-60px' }}
+                transition={{ duration: 0.4, delay: i * 0.1 }}
                 className="relative rounded-xl border border-slate-200 bg-slate-50 p-6 shadow-sm"
               >
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-700 text-white font-bold">
@@ -130,7 +135,7 @@ export default function Landing() {
                 </div>
                 <h3 className="mt-4 text-lg font-semibold text-slate-900">{step.title}</h3>
                 <p className="mt-2 text-slate-600">{step.body}</p>
-              </li>
+              </motion.li>
             ))}
           </ol>
         </div>
@@ -223,8 +228,8 @@ export default function Landing() {
             <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
               <li><a href="#how-it-works" className="hover:text-blue-700">How it works</a></li>
               <li><a href="#pricing" className="hover:text-blue-700">Pricing</a></li>
-              <li><a href="/privacy" className="hover:text-blue-700">Privacy</a></li>
-              <li><a href="/terms" className="hover:text-blue-700">Terms</a></li>
+              <li><Link to="/privacy" className="hover:text-blue-700">Privacy</Link></li>
+              <li><Link to="/terms" className="hover:text-blue-700">Terms</Link></li>
             </ul>
           </div>
           <p className="mt-8 text-xs text-slate-500 leading-relaxed max-w-3xl">

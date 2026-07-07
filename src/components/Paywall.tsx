@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { startCheckout, type Billing, type PlanKey } from '../lib/stripe'
-import { fadeUp, staggerChildren } from '../lib/motion'
+import { fadeUp, staggerChildren } from '../lib/motionVariants'
 import { FREE_SCAN_LIMIT } from '../lib/auth'
 
 type PlanCard = {

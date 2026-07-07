@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
-import { AnimatedCheck, EASE } from '../lib/motion'
+import { AnimatedCheck } from '../lib/motion'
+import { EASE } from '../lib/motionVariants'
 import { ResultsSkeleton } from './Skeleton'
 
 const STEP_INTERVAL_MS = 2400
