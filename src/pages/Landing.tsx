@@ -1,8 +1,12 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { motion } from 'framer-motion'
+import { fadeUp, staggerChildren } from '../lib/motion'
+import { useAuth } from '../lib/auth'
 
 export default function Landing() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [projectText, setProjectText] = useState('')
 
   const handleSubmit = () => {
@@ -20,12 +24,21 @@ export default function Landing() {
           <a href="#top" className="text-xl sm:text-2xl font-bold text-blue-700">
             PermitIQ
           </a>
-          <button
-            onClick={handleSubmit}
-            className="inline-flex items-center rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-800 transition"
-          >
-            Start Free
-          </button>
+          <div className="flex items-center gap-4">
+            <Link
+              to="/login"
+              className="text-sm font-medium text-slate-600 hover:text-blue-700 transition"
+            >
+              {user ? 'My account' : 'Sign in'}
+            </Link>
+            <motion.button
+              whileTap={{ scale: 0.97 }}
+              onClick={handleSubmit}
+              className="inline-flex items-center rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-800 transition"
+            >
+              Start Free
+            </motion.button>
+          </div>
         </nav>
       </header>
 
