@@ -31,7 +31,7 @@ begin
   values (
     new.id,
     new.email,
-    'PIQ-' || substr(replace(uuid_generate_v4()::text,'-',''), 1, 8)
+    'PIQ-' || substr(replace(gen_random_uuid()::text,'-',''), 1, 8)
   )
   on conflict (id) do nothing;
   return new;
