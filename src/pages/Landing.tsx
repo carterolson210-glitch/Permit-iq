@@ -26,10 +26,10 @@ export default function Landing() {
           </a>
           <div className="flex items-center gap-4">
             <Link
-              to="/login"
+              to={user ? '/analyze' : '/login'}
               className="text-sm font-medium text-slate-600 hover:text-blue-700 transition"
             >
-              {user ? 'My account' : 'Sign in'}
+              {user ? 'My scans' : 'Sign in'}
             </Link>
             <motion.button
               whileTap={{ scale: 0.97 }}
@@ -44,17 +44,28 @@ export default function Landing() {
 
       {/* HERO */}
       <section id="top">
-        <div className="mx-auto max-w-4xl px-4 sm:px-6 pt-16 pb-20 sm:pt-24 sm:pb-28 text-center">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900">
+        <motion.div
+          variants={staggerChildren}
+          initial="hidden"
+          animate="show"
+          className="mx-auto max-w-4xl px-4 sm:px-6 pt-16 pb-20 sm:pt-24 sm:pb-28 text-center"
+        >
+          <motion.h1
+            variants={fadeUp}
+            className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900"
+          >
             Get your Massachusetts building permit{' '}
             <span className="text-blue-700">right the first time</span>
-          </h1>
-          <p className="mt-6 text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto">
+          </motion.h1>
+          <motion.p
+            variants={fadeUp}
+            className="mt-6 text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto"
+          >
             Describe your project in plain English. PermitIQ tells you exactly what
             permits you need, what to submit, and what it costs — specific to your town.
-          </p>
+          </motion.p>
 
-          <div className="mt-10 mx-auto max-w-2xl text-left">
+          <motion.div variants={fadeUp} className="mt-10 mx-auto max-w-2xl text-left">
             <label htmlFor="project" className="block text-sm font-medium text-slate-700 mb-2">
               Your project
             </label>
