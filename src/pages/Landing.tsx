@@ -3,17 +3,34 @@ import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { fadeUp, staggerChildren } from '../lib/motionVariants'
 import { useAuth } from '../lib/auth'
+import { startCheckout, type PlanKey, type Billing } from '../lib/stripe'
 
 export default function Landing() {
   const navigate = useNavigate()
   const { user } = useAuth()
   const [projectText, setProjectText] = useState('')
+  const [checkoutLoading, setCheckoutLoading] = useState<PlanKey | null>(null)
+  const [checkoutError, setCheckoutError] = useState<string | null>(null)
 
   const handleSubmit = () => {
     const params = new URLSearchParams()
     if (projectText.trim()) params.set('project', projectText.trim())
     const qs = params.toString()
     navigate(qs ? `/analyze?${qs}` : '/analyze')
+  }
+
+  const handleCheckout = async (plan: PlanKey, billing: Billing) => {
+    setCheckoutError(null)
+    setCheckoutLoading(plan)
+    try {
+      await startCheckout(plan, billing)
+      // On success startCheckout redirects the browser to Stripe; on
+      // "not signed in" it redirects to /login. Either way we navigate
+      // away, so no need to clear checkoutLoading here.
+    } catch (e) {
+      setCheckoutError(e instanceof Error ? e.message : 'Could not start checkout.')
+      setCheckoutLoading(null)
+    }
   }
 
   return (
@@ -147,6 +164,11 @@ export default function Landing() {
           <div className="text-center max-w-2xl mx-auto">
             <h2 className="text-3xl sm:text-4xl font-bold text-slate-900">Simple, transparent pricing</h2>
             <p className="mt-3 text-slate-600">Pick the plan that fits your project. Cancel anytime.</p>
+            {checkoutError && (
+              <p className="mt-4 text-sm text-red-600" role="alert">
+                {checkoutError}
+              </p>
+            )}
           </div>
 
           <div className="mt-12 grid gap-6 md:grid-cols-3">
@@ -165,10 +187,11 @@ export default function Landing() {
                 <li className="flex gap-2"><Check /> PDF export</li>
               </ul>
               <button
-                onClick={handleSubmit}
-                className="mt-8 inline-flex items-center justify-center rounded-md border border-blue-700 px-4 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition"
+                onClick={() => handleCheckout('homeowner', 'once')}
+                disabled={checkoutLoading !== null}
+                className="mt-8 inline-flex items-center justify-center rounded-md border border-blue-700 px-4 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Get started
+                {checkoutLoading === 'homeowner' ? 'Redirecting…' : 'Get started'}
               </button>
             </div>
 
@@ -189,10 +212,11 @@ export default function Landing() {
                 <li className="flex gap-2"><Check /> Priority AI</li>
               </ul>
               <button
-                onClick={handleSubmit}
-                className="mt-8 inline-flex items-center justify-center rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow hover:bg-blue-800 transition"
+                onClick={() => handleCheckout('contractor', 'monthly')}
+                disabled={checkoutLoading !== null}
+                className="mt-8 inline-flex items-center justify-center rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow hover:bg-blue-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Start free trial
+                {checkoutLoading === 'contractor' ? 'Redirecting…' : 'Start free trial'}
               </button>
             </div>
 
@@ -210,10 +234,11 @@ export default function Landing() {
                 <li className="flex gap-2"><Check /> API access</li>
               </ul>
               <button
-                onClick={handleSubmit}
-                className="mt-8 inline-flex items-center justify-center rounded-md border border-blue-700 px-4 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition"
+                onClick={() => handleCheckout('firm', 'monthly')}
+                disabled={checkoutLoading !== null}
+                className="mt-8 inline-flex items-center justify-center rounded-md border border-blue-700 px-4 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Contact sales
+                {checkoutLoading === 'firm' ? 'Redirecting…' : 'Contact sales'}
               </button>
             </div>
           </div>

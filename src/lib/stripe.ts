@@ -25,7 +25,7 @@ export async function startCheckout(plan: PlanKey, billing: Billing) {
   const { data: session } = await supabase.auth.getSession()
   const user = session.session?.user
   if (!user) {
-    window.location.href = '/login?next=/pricing'
+    window.location.href = `/login?next=${encodeURIComponent('/#pricing')}`
     return
   }
 
