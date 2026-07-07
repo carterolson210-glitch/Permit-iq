@@ -11,7 +11,7 @@
   },
   "dependencies": {
     "@stripe/stripe-js": "^4.10.0",
-    "@supabase/supabase-js": "^2.46.1",
+    "@supabase/supabase-js": "^2.110.1",
     "framer-motion": "^11.11.17",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.2",

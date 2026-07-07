@@ -206,6 +206,123 @@ create policy "referrals_referrer_insert" on public.referrals
   for insert with check (auth.uid() = referrer_id);
 
 -- ─────────────────────────────────────────────────────────────
+-- scan_events: one row per analysis attempt (also used for rate limiting)
+-- ─────────────────────────────────────────────────────────────
+create table if not exists public.scan_events (
+  id uuid primary key default uuid_generate_v4(),
+  user_id uuid not null references public.users(id) on delete cascade,
+  status text check (status in ('started','succeeded','failed','refunded')) default 'started',
+  consumed_free_scan boolean not null default false,
+  town text,
+  category text,
+  created_at timestamptz default now()
+);
+
+create index if not exists scan_events_user_recent_idx
+  on public.scan_events(user_id, created_at desc);
+
+alter table public.scan_events enable row level security;
+
+-- Users may read their own scan history; all writes go through the
+-- service role inside edge functions.
+drop policy if exists "scan_events_self_select" on public.scan_events;
+create policy "scan_events_self_select" on public.scan_events
+  for select using (auth.uid() = user_id);
+
+-- ─────────────────────────────────────────────────────────────
+-- Free-scan reservation (atomic; called with service role only)
+-- ─────────────────────────────────────────────────────────────
+-- Reserves one scan for the user inside a single transaction:
+--   * paid plans (not expired) scan without consuming free credits
+--   * free plans consume one of 3 credits, incremented under a row lock
+--     so concurrent requests cannot exceed the limit
+-- Returns: { allowed, reason?, event_id?, remaining }
+--   remaining is null for unlimited (paid) plans.
+create or replace function public.reserve_scan(
+  p_user_id uuid,
+  p_town text default null,
+  p_category text default null
+) returns jsonb
+language plpgsql security definer set search_path = public as $$
+declare
+  u record;
+  v_event uuid;
+  v_used int;
+  v_limit constant int := 3;
+begin
+  select * into u from public.users where id = p_user_id for update;
+  if not found then
+    return jsonb_build_object('allowed', false, 'reason', 'no_user');
+  end if;
+
+  if u.plan <> 'free' and (u.plan_expires_at is null or u.plan_expires_at > now()) then
+    insert into public.scan_events (user_id, status, consumed_free_scan, town, category)
+    values (p_user_id, 'started', false, p_town, p_category)
+    returning id into v_event;
+    return jsonb_build_object('allowed', true, 'event_id', v_event, 'remaining', null);
+  end if;
+
+  v_used := coalesce(u.free_analyses_used, 0);
+  if v_used >= v_limit then
+    return jsonb_build_object('allowed', false, 'reason', 'limit', 'remaining', 0);
+  end if;
+
+  update public.users
+    set free_analyses_used = v_used + 1
+    where id = p_user_id;
+
+  insert into public.scan_events (user_id, status, consumed_free_scan, town, category)
+  values (p_user_id, 'started', true, p_town, p_category)
+  returning id into v_event;
+
+  return jsonb_build_object(
+    'allowed', true,
+    'event_id', v_event,
+    'remaining', v_limit - (v_used + 1)
+  );
+end $$;
+
+-- Refunds a reserved scan when the analysis fails after reservation
+-- (AI error, timeout, malformed output). Idempotent per event.
+create or replace function public.refund_scan(
+  p_event_id uuid
+) returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  e record;
+begin
+  select * into e from public.scan_events where id = p_event_id for update;
+  if not found or e.status <> 'started' then
+    return;
+  end if;
+
+  update public.scan_events set status = 'refunded' where id = p_event_id;
+
+  if e.consumed_free_scan then
+    update public.users
+      set free_analyses_used = greatest(coalesce(free_analyses_used, 0) - 1, 0)
+      where id = e.user_id;
+  end if;
+end $$;
+
+create or replace function public.finish_scan(
+  p_event_id uuid,
+  p_status text
+) returns void
+language plpgsql security definer set search_path = public as $$
+begin
+  update public.scan_events
+    set status = p_status
+    where id = p_event_id and status = 'started'
+      and p_status in ('succeeded','failed');
+end $$;
+
+-- These functions must only be callable by the service role (edge functions).
+revoke all on function public.reserve_scan(uuid, text, text) from public, anon, authenticated;
+revoke all on function public.refund_scan(uuid) from public, anon, authenticated;
+revoke all on function public.finish_scan(uuid, text) from public, anon, authenticated;
+
+-- ─────────────────────────────────────────────────────────────
 -- Storage bucket for permit documents
 -- ─────────────────────────────────────────────────────────────
 insert into storage.buckets (id, name, public)
