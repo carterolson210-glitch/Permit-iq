@@ -1,6 +1,7 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Canvas } from '@react-three/fiber'
+import { motion } from 'framer-motion'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import HeroScene from './HeroScene'
@@ -18,6 +19,8 @@ export default function Hero3DSection() {
   const hint = useRef<HTMLDivElement>(null)
   const veil = useRef<HTMLDivElement>(null)
   const dash = useRef<HTMLDivElement>(null)
+  const capExtract = useRef<HTMLDivElement>(null)
+  const capMap = useRef<HTMLDivElement>(null)
   const [active, setActive] = useState(true)
 
   useLayoutEffect(() => {
@@ -43,6 +46,21 @@ export default function Hero3DSection() {
       // tween positions map 1:1 onto scroll progress.
       tl.to(headline.current, { opacity: 0, y: -60, ease: 'none', duration: 0.06 }, 0.02)
       tl.to(hint.current, { opacity: 0, ease: 'none', duration: 0.03 }, 0)
+      // scene captions: extract (S2) and map (S3), each in-hold-out
+      tl.fromTo(
+        capExtract.current,
+        { opacity: 0, y: 36 },
+        { opacity: 1, y: 0, ease: 'power1.out', duration: 0.05 },
+        0.24
+      )
+      tl.to(capExtract.current, { opacity: 0, y: -30, ease: 'power1.in', duration: 0.05 }, 0.4)
+      tl.fromTo(
+        capMap.current,
+        { opacity: 0, y: 36 },
+        { opacity: 1, y: 0, ease: 'power1.out', duration: 0.05 },
+        0.52
+      )
+      tl.to(capMap.current, { opacity: 0, y: -30, ease: 'power1.in', duration: 0.05 }, 0.7)
       // S4: soft veil over the 3D scene, then the dashboard card rises
       tl.fromTo(
         veil.current,
@@ -79,21 +97,67 @@ export default function Hero3DSection() {
         className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-50/60 via-slate-50/85 to-slate-50 opacity-0"
       />
 
-      {/* 2D overlay */}
+      {/* 2D overlay — Framer Motion handles entrances, GSAP handles scroll-out */}
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-between py-24">
         <div ref={headline} className="max-w-3xl px-6 text-center">
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900">
+          <motion.h1
+            initial={{ opacity: 0, y: 28 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, ease: 'easeOut' }}
+            className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900"
+          >
             Get your Massachusetts building permit{' '}
             <span className="text-blue-700">right the first time</span>
-          </h1>
-          <p className="mt-5 text-lg sm:text-xl text-slate-600">
+          </motion.h1>
+          <motion.p
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.15, ease: 'easeOut' }}
+            className="mt-5 text-lg sm:text-xl text-slate-600"
+          >
             Describe your project in plain English. PermitIQ maps it to every
             permit your town requires.
-          </p>
+          </motion.p>
         </div>
-        <div ref={hint} className="flex flex-col items-center gap-2 text-slate-500">
+        <motion.div
+          ref={hint}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.8, delay: 0.9 }}
+          className="flex flex-col items-center gap-2 text-slate-500"
+        >
           <span className="text-xs font-medium uppercase tracking-widest">Scroll</span>
           <span className="block h-8 w-px animate-pulse bg-slate-400" />
+        </motion.div>
+      </div>
+
+      {/* scene captions */}
+      <div
+        ref={capExtract}
+        className="pointer-events-none absolute inset-x-0 top-20 flex justify-center opacity-0"
+      >
+        <div className="max-w-2xl px-6 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">
+            AI reads your project like an inspector would
+          </h2>
+          <p className="mt-3 text-lg text-slate-600">
+            Every requirement — permit type, jurisdiction, timeline, fees —
+            extracted in seconds.
+          </p>
+        </div>
+      </div>
+      <div
+        ref={capMap}
+        className="pointer-events-none absolute inset-x-0 top-20 flex justify-center opacity-0"
+      >
+        <div className="max-w-2xl px-6 text-center">
+          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">
+            Tuned to all <span className="text-blue-700">351</span> Massachusetts
+            cities &amp; towns
+          </h2>
+          <p className="mt-3 text-lg text-slate-600">
+            Local bylaws, local fees, local forms — not generic state guidance.
+          </p>
         </div>
       </div>
 

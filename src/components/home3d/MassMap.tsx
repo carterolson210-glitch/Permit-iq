@@ -18,16 +18,14 @@ const OUTLINE: [number, number][] = [
   [1.66, 0.02],
   [1.62, -0.22],
   [1.98, -0.5], // Plymouth
-  [2.35, -0.62],
-  [2.85, -0.72], // upper cape
-  [3.22, -0.62],
-  [3.32, -0.3], // outer cape elbow
-  [3.2, -0.02], // Provincetown curl
-  [2.98, -0.1],
-  [3.05, -0.35],
-  [2.85, -0.52],
-  [2.4, -0.48], // inner cape / bay
-  [2.05, -0.72],
+  [2.4, -0.5], // Cape Cod Bay rim
+  [2.85, -0.42],
+  [3.02, -0.1], // inner elbow
+  [3.18, 0.04], // Provincetown tip
+  [3.36, -0.28], // outer (Atlantic) shore
+  [3.28, -0.6], // Chatham elbow
+  [2.7, -0.75], // Nantucket Sound shore
+  [2.15, -0.8],
   [1.6, -0.78], // Buzzards Bay
   [1.3, -0.68],
   [0.95, -0.72], // RI border
@@ -150,12 +148,12 @@ export default function MassMap() {
           position={[town.x, 0.14, -town.y]}
           scale={0.0001}
         >
-          <mesh position={[0, 0.14, 0]}>
-            <cylinderGeometry args={[0.012, 0.012, 0.28, 6]} />
+          <mesh position={[0, 0.2, 0]}>
+            <cylinderGeometry args={[0.016, 0.016, 0.4, 6]} />
             <meshStandardMaterial color="#1d4ed8" />
           </mesh>
-          <mesh position={[0, 0.32, 0]}>
-            <sphereGeometry args={[0.055, 12, 10]} />
+          <mesh position={[0, 0.44, 0]}>
+            <sphereGeometry args={[0.085, 12, 10]} />
             <meshStandardMaterial
               color={town.name === 'Marblehead' ? '#16a34a' : '#1d4ed8'}
               emissive={town.name === 'Marblehead' ? '#16a34a' : '#1d4ed8'}
