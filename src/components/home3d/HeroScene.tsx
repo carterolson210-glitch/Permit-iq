@@ -42,10 +42,10 @@ function CameraRig() {
     if (c > 0) {
       pos.current.set(
         pos.current.x * (1 - c),
-        THREE.MathUtils.lerp(pos.current.y, 3.1, c) + d * 1.1,
-        THREE.MathUtils.lerp(pos.current.z, 6.3, c) - d * 1.5
+        THREE.MathUtils.lerp(pos.current.y, 4.6, c) + d * 0.9,
+        THREE.MathUtils.lerp(pos.current.z, 4.4, c) - d * 1.2
       )
-      look.current.set(0, THREE.MathUtils.lerp(0, -1.35, c), -0.3 * c)
+      look.current.set(0, THREE.MathUtils.lerp(0, -1.55, c), -0.5 * c)
     }
 
     camera.position.copy(pos.current)

@@ -91,14 +91,14 @@ export default function DocumentScene() {
     // then fly up & away as scene 3 takes over
     chips.current.forEach((chip, i) => {
       if (!chip) return
-      const delay = i * 0.025
+      const delay = i * 0.02
       const fly = seg(p, SCENES.s2.a + 0.04 + delay, SCENES.s2.b - 0.02 + delay)
-      const exit = seg(p, SCENES.s3.a + 0.02 + delay, SCENES.s3.a + 0.12 + delay)
+      const exit = seg(p, SCENES.s3.a + delay, SCENES.s3.a + 0.07 + delay)
       const target = CHIP_DEFS[i].to
       chip.position.set(
         target.x * fly,
-        target.y * fly + exit * (2.6 + i * 0.3),
-        0.15 + fly * target.z + exit * 1.5
+        target.y * fly + exit * (5.5 + i * 0.4),
+        0.15 + fly * target.z + exit * 2.5
       )
       chip.rotation.y = (1 - fly) * (i % 2 === 0 ? -1.2 : 1.2)
       chip.rotation.x = exit * 0.6
@@ -116,7 +116,7 @@ export default function DocumentScene() {
     })
 
     // once everything in this group is invisible, skip rendering it
-    g.visible = p < SCENES.s3.a + 0.25
+    g.visible = p < SCENES.s3.a + 0.15
   })
 
   return (

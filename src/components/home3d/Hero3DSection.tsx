@@ -47,8 +47,8 @@ export default function Hero3DSection() {
       tl.fromTo(
         veil.current,
         { opacity: 0 },
-        { opacity: 1, ease: 'none', duration: 0.14 },
-        0.78
+        { opacity: 1, ease: 'none', duration: 0.12 },
+        0.76
       )
       tl.fromTo(
         dash.current,
