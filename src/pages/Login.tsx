@@ -53,7 +53,10 @@ export default function Login() {
         const { data, error: err } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { name: name.trim() || undefined } },
+          options: {
+            data: { name: name.trim() || undefined },
+            emailRedirectTo: `${window.location.origin}/login`,
+          },
         })
         if (err) {
           setError(err.message)
