@@ -4,10 +4,12 @@ import { motion } from 'framer-motion'
 import { fadeUp, staggerChildren } from '../lib/motionVariants'
 import { useAuth } from '../lib/auth'
 import { startCheckout, type PlanKey, type Billing } from '../lib/stripe'
+import Hero3D, { use3DHero } from '../components/home3d/Hero3D'
 
 export default function Landing() {
   const navigate = useNavigate()
   const { user } = useAuth()
+  const show3D = use3DHero()
   const [projectText, setProjectText] = useState('')
   const [checkoutLoading, setCheckoutLoading] = useState<PlanKey | null>(null)
   const [checkoutError, setCheckoutError] = useState<string | null>(null)
@@ -59,6 +61,9 @@ export default function Landing() {
         </nav>
       </header>
 
+      {/* 3D SCROLL HERO (desktop + WebGL + motion-ok; otherwise 2D hero below) */}
+      {show3D && <Hero3D />}
+
       {/* HERO */}
       <section id="top">
         <motion.div
@@ -67,20 +72,24 @@ export default function Landing() {
           animate="show"
           className="mx-auto max-w-4xl px-4 sm:px-6 pt-16 pb-20 sm:pt-24 sm:pb-28 text-center"
         >
-          <motion.h1
-            variants={fadeUp}
-            className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900"
-          >
-            Get your Massachusetts building permit{' '}
-            <span className="text-blue-700">right the first time</span>
-          </motion.h1>
-          <motion.p
-            variants={fadeUp}
-            className="mt-6 text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto"
-          >
-            Describe your project in plain English. PermitIQ tells you exactly what
-            permits you need, what to submit, and what it costs — specific to your town.
-          </motion.p>
+          {!show3D && (
+            <>
+              <motion.h1
+                variants={fadeUp}
+                className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900"
+              >
+                Get your Massachusetts building permit{' '}
+                <span className="text-blue-700">right the first time</span>
+              </motion.h1>
+              <motion.p
+                variants={fadeUp}
+                className="mt-6 text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto"
+              >
+                Describe your project in plain English. PermitIQ tells you exactly what
+                permits you need, what to submit, and what it costs — specific to your town.
+              </motion.p>
+            </>
+          )}
 
           <motion.div variants={fadeUp} className="mt-10 mx-auto max-w-2xl text-left">
             <label htmlFor="project" className="block text-sm font-medium text-slate-700 mb-2">
