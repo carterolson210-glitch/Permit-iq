@@ -1,7 +1,7 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { scrollState } from './scroll'
+import { scrollState, seg, SCENES } from './scroll'
 
 // Layered blueprint scenery at different z-depths. Each layer translates at a
 // different rate as scroll progresses, selling camera depth (parallax) beyond
@@ -33,8 +33,10 @@ function GridLayer({
 
   useFrame(() => {
     if (!ref.current) return
-    // deeper layers drift less → parallax
+    // deeper layers drift less → parallax; everything dims for the S4 reveal
     ref.current.position.y = scrollState.smooth * rate
+    const mat = grid.material as THREE.LineBasicMaterial
+    mat.opacity = opacity * (1 - seg(scrollState.smooth, SCENES.s4.a, SCENES.s4.a + 0.15) * 0.85)
   })
 
   return (
