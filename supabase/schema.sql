@@ -328,3 +328,22 @@ revoke all on function public.finish_scan(uuid, text) from public, anon, authent
 insert into storage.buckets (id, name, public)
 values ('permit-documents', 'permit-documents', false)
 on conflict (id) do nothing;
+
+-- ─────────────────────────────────────────────────────────────
+-- client_errors (browser error reports; insert-only from clients,
+-- readable only with the service role / dashboard)
+-- ─────────────────────────────────────────────────────────────
+create table if not exists public.client_errors (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz default now(),
+  source text not null,
+  message text not null,
+  stack text,
+  url text,
+  user_agent text,
+  user_id uuid
+);
+alter table public.client_errors enable row level security;
+drop policy if exists client_errors_insert on public.client_errors;
+create policy client_errors_insert on public.client_errors
+  for insert to anon, authenticated with check (true);
