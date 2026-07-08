@@ -7,6 +7,8 @@ export type AnalyzeErrorCode =
   | 'rate_limit'
   | 'scan_limit'
   | 'ai_error'
+  | 'network'
+  | 'timeout'
   | 'unknown'
 
 export class AnalyzeError extends Error {
@@ -52,15 +54,37 @@ export async function analyzeProject(input: AnalyzeInput): Promise<AnalyzeResult
   const token = session.session?.access_token
   if (!token) throw new AnalyzeError('Your session has expired. Please sign in again.', 'auth')
 
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${token}`,
-      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
-    },
-    body: JSON.stringify(input),
-  })
+  // AI analysis is slow but should never hang forever — cap at 2 minutes.
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 120_000)
+  let resp: Response
+  try {
+    resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${token}`,
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
+      },
+      body: JSON.stringify(input),
+      signal: controller.signal,
+    })
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      throw new AnalyzeError(
+        'The scan is taking longer than expected and timed out. Your inputs are still filled in below — please try again.',
+        'timeout'
+      )
+    }
+    throw new AnalyzeError(
+      navigator.onLine === false
+        ? 'You appear to be offline. Check your connection and try again — your inputs are saved below.'
+        : 'Could not reach the scan service. Check your connection and try again — your inputs are saved below.',
+      'network'
+    )
+  } finally {
+    clearTimeout(timer)
+  }
 
   const body = await resp.json().catch(() => ({}))
   if (!resp.ok) {

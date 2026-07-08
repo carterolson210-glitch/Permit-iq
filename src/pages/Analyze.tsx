@@ -11,6 +11,7 @@ import { ScanCounter } from '../components/ScanCounter'
 import ScanAnimation from '../components/ScanAnimation'
 import Paywall from '../components/Paywall'
 import TrustPanel from '../components/TrustPanel'
+import { logClientError } from '../lib/monitor'
 
 const CATEGORIES = [
   'New Construction',
@@ -132,8 +133,10 @@ export default function Analyze() {
           return
         }
         setError(e.message)
+        if (e.code === 'unknown' || e.code === 'ai_error') logClientError('scan_failed', e)
       } else {
         setError('Something went wrong. Your scan was not used — please try again.')
+        logClientError('scan_failed', e)
       }
       void refreshProfile()
     }

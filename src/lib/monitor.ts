@@ -1,8 +1,8 @@
 import { supabase, isSupabaseConfigured } from './supabase'
 
-// Lightweight client-side error reporting into the `client_errors` table
-// (insert-only RLS; read it from the Supabase dashboard). Fire-and-forget:
-// reporting must never break the app or spam the table.
+// Lightweight client-side error reporting into the `client_events` table
+// (insert-only RLS; read it from the Supabase dashboard / SQL editor).
+// Fire-and-forget: reporting must never break the app or spam the table.
 
 const MAX_REPORTS_PER_SESSION = 20
 let reported = 0
@@ -15,7 +15,7 @@ export function logClientError(source: string, err: unknown): void {
 
     const message =
       err instanceof Error ? err.message : typeof err === 'string' ? err : JSON.stringify(err)
-    const stack = err instanceof Error ? err.stack ?? null : null
+    const stack = err instanceof Error ? (err.stack ?? null) : null
 
     // one report per unique message per session
     const key = `${source}:${message}`
@@ -25,13 +25,13 @@ export function logClientError(source: string, err: unknown): void {
 
     void supabase.auth.getUser().then(({ data }) =>
       supabase
-        .from('client_errors')
+        .from('client_events')
         .insert({
-          source,
-          message: message.slice(0, 500),
-          stack: stack?.slice(0, 2000) ?? null,
-          url: window.location.pathname + window.location.search,
-          user_agent: navigator.userAgent.slice(0, 300),
+          kind: source.slice(0, 40),
+          message: message.slice(0, 2000),
+          detail: stack ? { stack: stack.slice(0, 2000) } : null,
+          url: (window.location.pathname + window.location.search).slice(0, 500),
+          ua: navigator.userAgent.slice(0, 300),
           user_id: data.user?.id ?? null,
         })
         .then(() => undefined)

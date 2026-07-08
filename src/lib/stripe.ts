@@ -30,25 +30,39 @@ export async function startCheckout(plan: PlanKey, billing: Billing) {
   }
 
   const url = functionUrl('stripe-checkout')
-  const resp = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'content-type': 'application/json',
-      authorization: `Bearer ${session.session?.access_token}`,
-      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
-    },
-    body: JSON.stringify({
-      price_id: priceId,
-      mode: billing === 'once' ? 'payment' : 'subscription',
-      user_id: user.id,
-      user_email: user.email,
-      plan_name: plan,
-    }),
-  })
+  if (!url) throw new Error('Checkout is not configured yet. Please try again later.')
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 30_000)
+  let resp: Response
+  try {
+    resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        authorization: `Bearer ${session.session?.access_token}`,
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
+      },
+      body: JSON.stringify({
+        price_id: priceId,
+        mode: billing === 'once' ? 'payment' : 'subscription',
+        user_id: user.id,
+        user_email: user.email,
+        plan_name: plan,
+      }),
+      signal: controller.signal,
+    })
+  } catch {
+    throw new Error(
+      'Could not reach the checkout service — check your connection and try again. You have not been charged.'
+    )
+  } finally {
+    clearTimeout(timer)
+  }
 
   if (!resp.ok) {
     const body = await resp.json().catch(() => ({}))
-    throw new Error(body?.error ?? 'Could not start checkout.')
+    throw new Error(body?.error ?? 'Could not start checkout. You have not been charged.')
   }
   const { url: redirectUrl } = (await resp.json()) as { url: string }
   window.location.href = redirectUrl

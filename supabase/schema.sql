@@ -347,3 +347,21 @@ alter table public.client_errors enable row level security;
 drop policy if exists client_errors_insert on public.client_errors;
 create policy client_errors_insert on public.client_errors
   for insert to anon, authenticated with check (true);
+
+-- ── Client-side error/event monitoring ──────────────────────────────
+-- Insert-only from the browser (anon + authenticated); readable only via
+-- the service role (dashboard / SQL). See src/lib/monitor.ts.
+create table if not exists public.client_events (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  user_id uuid,
+  kind text not null check (char_length(kind) <= 40),
+  message text not null check (char_length(message) <= 2000),
+  detail jsonb,
+  url text check (char_length(url) <= 500),
+  ua text check (char_length(ua) <= 300)
+);
+alter table public.client_events enable row level security;
+create policy client_events_insert on public.client_events
+  for insert to anon, authenticated with check (true);
+create index if not exists client_events_created_idx on public.client_events (created_at desc);
