@@ -100,7 +100,7 @@ export default function MassMap() {
     // pins pop up one after another as scroll continues
     pins.current.forEach((pin, i) => {
       if (!pin) return
-      const pop = seg(p, SCENES.s3.a + 0.1 + i * 0.016, SCENES.s3.a + 0.16 + i * 0.016)
+      const pop = seg(p, SCENES.s3.a + 0.08 + i * 0.012, SCENES.s3.a + 0.14 + i * 0.012)
       const s = pop * (1 - exit)
       pin.scale.setScalar(Math.max(s, 0.0001))
       pin.position.y = 0.14 + Math.sin(t * 1.4 + i) * 0.02 * pop
@@ -108,8 +108,9 @@ export default function MassMap() {
 
     blocks.current.forEach((b, i) => {
       if (!b) return
-      const grow = seg(p, SCENES.s3.a + 0.12 + i * 0.01, SCENES.s3.a + 0.2 + i * 0.01)
+      const grow = seg(p, SCENES.s3.a + 0.1 + i * 0.01, SCENES.s3.a + 0.18 + i * 0.01)
       const h = BLOCKS[i][2] * grow * (1 - exit)
+      b.visible = h > 0.01
       b.scale.y = Math.max(h, 0.0001)
       b.position.y = 0.14 + (h * 0.5)
     })
@@ -129,7 +130,7 @@ export default function MassMap() {
       {/* extruded state slab, lying flat */}
       <mesh ref={slab} geometry={geometry} rotation={[-Math.PI / 2, 0, 0]}>
         <meshStandardMaterial
-          color="#bfdbfe"
+          color="#93c5fd"
           transparent
           opacity={0}
           roughness={0.25}
