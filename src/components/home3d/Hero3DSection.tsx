@@ -37,9 +37,13 @@ export default function Hero3DSection() {
           },
         },
       })
-      // 2D overlay choreography, scrubbed on the same timeline (0..1 = progress)
-      tl.to(headline.current, { opacity: 0, y: -60, ease: 'none', duration: 0.14 }, 0.02)
-      tl.to(hint.current, { opacity: 0, ease: 'none', duration: 0.05 }, 0)
+      // 2D overlay choreography, scrubbed on the same timeline. The dummy set()
+      // at time 1 pins the timeline duration to 1 so tween positions map 1:1
+      // onto scroll progress (otherwise GSAP stretches the last tween to the
+      // full scroll span).
+      tl.to(headline.current, { opacity: 0, y: -60, ease: 'none', duration: 0.1 }, 0.02)
+      tl.to(hint.current, { opacity: 0, ease: 'none', duration: 0.04 }, 0)
+      tl.set({}, {}, 1)
     }, wrap)
     return () => ctx.revert()
   }, [])

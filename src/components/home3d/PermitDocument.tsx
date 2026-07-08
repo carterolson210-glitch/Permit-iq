@@ -26,11 +26,12 @@ export default function PermitDocument() {
     const p = scrollState.smooth
     const t = clock.elapsedTime
 
-    // Scene 1 choreography (p 0 → 0.3): tilted showcase → face-on.
+    // Scene 1 choreography (p 0 → 0.3): starts low (clear of the headline),
+    // rises to center while going from tilted showcase → face-on.
     const intro = seg(p, 0, 0.3)
     g.rotation.x = THREE.MathUtils.lerp(-0.42, 0, intro)
     g.rotation.y = THREE.MathUtils.lerp(0.55, -0.08, intro)
-    g.position.y = THREE.MathUtils.lerp(-0.15, 0, intro)
+    g.position.y = THREE.MathUtils.lerp(-2.1, 0, intro)
 
     // Idle float layered on top — fades out as the doc settles face-on,
     // plus a small velocity kick so fast scrolling visibly "drags" the doc.
