@@ -1,4 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Canvas } from '@react-three/fiber'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
@@ -7,14 +8,16 @@ import { scrollState } from './scroll'
 
 gsap.registerPlugin(ScrollTrigger)
 
-// Length of the pinned scroll sequence, as a multiple of viewport height.
-// Stage 1 covers scene 1 only; grows as later scenes land.
-const PIN_LENGTH = '+=300%'
+// Pinned scroll length: 5 viewport-heights of scroll drive the 4-scene
+// sequence (document → break-apart → map → dashboard reveal).
+const PIN_LENGTH = '+=500%'
 
 export default function Hero3DSection() {
   const wrap = useRef<HTMLDivElement>(null)
   const headline = useRef<HTMLDivElement>(null)
   const hint = useRef<HTMLDivElement>(null)
+  const veil = useRef<HTMLDivElement>(null)
+  const dash = useRef<HTMLDivElement>(null)
   const [active, setActive] = useState(true)
 
   useLayoutEffect(() => {
@@ -30,19 +33,29 @@ export default function Hero3DSection() {
             scrollState.progress = self.progress
             scrollState.velocity = self.getVelocity()
           },
-          // Pause the WebGL frame loop once the pinned section is fully
-          // scrolled past (or before it enters, on back-navigation).
+          // Pause the WebGL frame loop when the pinned section isn't on screen.
           onToggle(self) {
             setActive(self.isActive)
           },
         },
       })
-      // 2D overlay choreography, scrubbed on the same timeline. The dummy set()
-      // at time 1 pins the timeline duration to 1 so tween positions map 1:1
-      // onto scroll progress (otherwise GSAP stretches the last tween to the
-      // full scroll span).
-      tl.to(headline.current, { opacity: 0, y: -60, ease: 'none', duration: 0.1 }, 0.02)
-      tl.to(hint.current, { opacity: 0, ease: 'none', duration: 0.04 }, 0)
+      // Overlay choreography. tl.set({}, {}, 1) pins timeline duration to 1 so
+      // tween positions map 1:1 onto scroll progress.
+      tl.to(headline.current, { opacity: 0, y: -60, ease: 'none', duration: 0.06 }, 0.02)
+      tl.to(hint.current, { opacity: 0, ease: 'none', duration: 0.03 }, 0)
+      // S4: soft veil over the 3D scene, then the dashboard card rises
+      tl.fromTo(
+        veil.current,
+        { opacity: 0 },
+        { opacity: 1, ease: 'none', duration: 0.14 },
+        0.78
+      )
+      tl.fromTo(
+        dash.current,
+        { opacity: 0, y: 90, scale: 0.9 },
+        { opacity: 1, y: 0, scale: 1, ease: 'power1.out', duration: 0.16 },
+        0.8
+      )
       tl.set({}, {}, 1)
     }, wrap)
     return () => ctx.revert()
@@ -60,6 +73,12 @@ export default function Hero3DSection() {
         <HeroScene />
       </Canvas>
 
+      {/* S4 veil — lets the 3D exit softly behind the dashboard */}
+      <div
+        ref={veil}
+        className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-50/60 via-slate-50/85 to-slate-50 opacity-0"
+      />
+
       {/* 2D overlay */}
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-between py-24">
         <div ref={headline} className="max-w-3xl px-6 text-center">
@@ -75,6 +94,71 @@ export default function Hero3DSection() {
         <div ref={hint} className="flex flex-col items-center gap-2 text-slate-500">
           <span className="text-xs font-medium uppercase tracking-widest">Scroll</span>
           <span className="block h-8 w-px animate-pulse bg-slate-400" />
+        </div>
+      </div>
+
+      {/* S4 dashboard reveal */}
+      <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-6">
+        <div ref={dash} className="w-full max-w-3xl opacity-0">
+          <div className="pointer-events-auto overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-5 py-3">
+              <span className="h-3 w-3 rounded-full bg-slate-300" />
+              <span className="h-3 w-3 rounded-full bg-slate-300" />
+              <span className="h-3 w-3 rounded-full bg-slate-300" />
+              <span className="ml-3 text-sm font-semibold text-slate-700">
+                PermitIQ · Deck — Marblehead, MA
+              </span>
+              <span className="ml-auto rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700">
+                Permit Ready
+              </span>
+            </div>
+            <div className="grid gap-6 p-6 sm:grid-cols-5">
+              <ul className="space-y-3 sm:col-span-3">
+                {[
+                  'Building permit — Form PIQ-780',
+                  'Zoning compliance review',
+                  'Conservation commission (wetlands)',
+                  'Certified plot plan + deck framing plan',
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3 text-sm text-slate-700">
+                    <svg viewBox="0 0 20 20" className="mt-0.5 h-5 w-5 flex-none text-green-600" fill="currentColor">
+                      <path
+                        fillRule="evenodd"
+                        d="M16.704 5.29a1 1 0 010 1.42l-7.5 7.5a1 1 0 01-1.42 0l-3.5-3.5a1 1 0 011.42-1.42l2.79 2.79 6.79-6.79a1 1 0 011.42 0z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+              <div className="space-y-4 sm:col-span-2">
+                <div className="rounded-lg bg-slate-50 p-4">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Estimated fees
+                  </div>
+                  <div className="mt-1 text-2xl font-extrabold text-slate-900">$150–$320</div>
+                </div>
+                <div className="rounded-lg bg-slate-50 p-4">
+                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    Timeline
+                  </div>
+                  <div className="mt-1 text-2xl font-extrabold text-slate-900">2–4 weeks</div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div className="mt-8 text-center">
+            <Link
+              to="/analyze"
+              className="pointer-events-auto inline-flex items-center rounded-lg bg-blue-700 px-8 py-3.5 text-base font-semibold text-white shadow-lg hover:bg-blue-800 transition"
+            >
+              Scan my project free
+            </Link>
+            <p className="mt-3 text-sm text-slate-500">
+              3 free scans with a new account — no credit card required
+            </p>
+          </div>
         </div>
       </div>
     </div>
