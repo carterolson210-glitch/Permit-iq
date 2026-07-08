@@ -51,6 +51,10 @@ export interface PermitAnalysis {
   pro_tips: string[]
   town_specific_notes: string
   disclaimer: string
+  /** Model's own confidence in town-specific accuracy (newer scans only). */
+  confidence?: 'high' | 'medium' | 'low'
+  /** Public sources the model based town-specific answers on (newer scans only). */
+  sources?: { title: string; url: string }[]
 }
 
 export interface Project {

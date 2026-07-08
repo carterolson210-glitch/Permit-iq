@@ -10,6 +10,7 @@ import type { PermitAnalysis } from '../lib/types'
 import { ScanCounter } from '../components/ScanCounter'
 import ScanAnimation from '../components/ScanAnimation'
 import Paywall from '../components/Paywall'
+import TrustPanel from '../components/TrustPanel'
 
 const CATEGORIES = [
   'New Construction',
@@ -558,6 +559,9 @@ function Results({
           </div>
         )}
       </motion.div>
+
+      {/* Sourcing & accuracy */}
+      <TrustPanel town={town} analysis={analysis} />
 
       {/* Permits */}
       <motion.div variants={fadeUp}>

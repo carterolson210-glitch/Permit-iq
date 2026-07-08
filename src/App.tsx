@@ -15,6 +15,7 @@ import Login from './pages/Login'
 import ResetPassword from './pages/ResetPassword'
 import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
+import TownPermitPage from './pages/TownPermitPage'
 
 function FullPageLoader() {
   return (
@@ -86,6 +87,14 @@ function AnimatedRoutes() {
                 <Analyze />
               </PageTransition>
             </RequireAuth>
+          }
+        />
+        <Route
+          path="/permits/:slug"
+          element={
+            <PageTransition>
+              <TownPermitPage />
+            </PageTransition>
           }
         />
         <Route

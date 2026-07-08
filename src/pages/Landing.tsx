@@ -5,6 +5,11 @@ import { fadeUp, staggerChildren } from '../lib/motionVariants'
 import { useAuth } from '../lib/auth'
 import { startCheckout, type PlanKey, type Billing } from '../lib/stripe'
 import Hero3D, { use3DHero } from '../components/home3d/Hero3D'
+import TownProofSection from '../components/townproof/TownProofSection'
+import VarianceSection from '../components/townproof/VarianceSection'
+import PenaltySection from '../components/townproof/PenaltySection'
+import CompareSection from '../components/townproof/CompareSection'
+import { TOWN_PROFILES } from '../data/townPermits'
 
 export default function Landing() {
   const navigate = useNavigate()
@@ -120,8 +125,20 @@ export default function Landing() {
         </motion.div>
       </section>
 
+      {/* TOWN-BY-TOWN PROOF */}
+      <TownProofSection />
+
+      {/* TOWN VARIANCE */}
+      <VarianceSection />
+
+      {/* GENERIC VS PERMITIQ */}
+      <CompareSection />
+
+      {/* REJECTIONS + PENALTIES */}
+      <PenaltySection />
+
       {/* HOW IT WORKS */}
-      <section id="how-it-works" className="bg-white border-y border-slate-200">
+      <section id="how-it-works" className="bg-slate-50">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-20">
           <div className="text-center max-w-2xl mx-auto">
             <h2 className="text-3xl sm:text-4xl font-bold text-slate-900">How it works</h2>
@@ -260,10 +277,25 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
             <div className="text-xl font-bold text-blue-700">PermitIQ</div>
             <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
+              <li><a href="#your-town" className="hover:text-blue-700">Your town</a></li>
               <li><a href="#how-it-works" className="hover:text-blue-700">How it works</a></li>
               <li><a href="#pricing" className="hover:text-blue-700">Pricing</a></li>
               <li><Link to="/privacy" className="hover:text-blue-700">Privacy</Link></li>
               <li><Link to="/terms" className="hover:text-blue-700">Terms</Link></li>
+            </ul>
+          </div>
+          <div className="mt-8">
+            <div className="text-xs font-semibold uppercase tracking-wide text-slate-400">
+              Massachusetts town permit guides
+            </div>
+            <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
+              {TOWN_PROFILES.map((t) => (
+                <li key={t.slug}>
+                  <Link to={`/permits/${t.slug}`} className="hover:text-blue-700">
+                    {t.name}
+                  </Link>
+                </li>
+              ))}
             </ul>
           </div>
           <p className="mt-8 text-xs text-slate-500 leading-relaxed max-w-3xl">
