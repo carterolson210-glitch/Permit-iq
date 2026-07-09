@@ -7,6 +7,7 @@ import {
   useLocation,
 } from 'react-router-dom'
 import { AnimatePresence, MotionConfig, motion } from 'framer-motion'
+import { Analytics } from '@vercel/analytics/react'
 import { AuthProvider, useAuth } from './lib/auth'
 import { PageTransition } from './lib/motion'
 import Landing from './pages/Landing'
@@ -117,6 +118,7 @@ export default function App() {
         <MotionConfig reducedMotion="user">
           <ScrollToTop />
           <AnimatedRoutes />
+          <Analytics />
         </MotionConfig>
       </AuthProvider>
     </BrowserRouter>
