@@ -38,7 +38,8 @@ export type TownPermitProfile = {
   penalty?: SourcedFact
 }
 
-const V = '2026-07-07' // last verification pass (single-day research sweep)
+const V = '2026-07-07' // first verification pass
+const V2 = '2026-07-10' // second verification pass (expansion batch)
 
 export const TOWN_PROFILES: TownPermitProfile[] = [
   {
@@ -493,6 +494,383 @@ export const TOWN_PROFILES: TownPermitProfile[] = [
       effectiveDate: '2025-03-01',
     },
   },
+  {
+    slug: 'quincy-ma',
+    name: 'Quincy',
+    county: 'Norfolk',
+    map: { x: 1.5, y: -0.04 },
+    dept: {
+      name: 'Inspectional Services Department',
+      address: '1305 Hancock Street, Quincy, MA 02169',
+      phone: '(617) 376-1450',
+      url: 'https://www.quincyma.gov/departments/inspectional_services/inspectional_services_departments/building.php',
+    },
+    portal: {
+      vendor: 'ViewPoint (city online permitting)',
+      url: 'https://www.quincyma.gov/departments/inspectional_services/online_permitting.php',
+    },
+    facts: [
+      {
+        label: 'Building permit',
+        value: '$20 for the first $1,000 of estimated construction cost, then $12 per additional $1,000 (or part thereof)',
+        sourceName: 'City of Quincy Code — Department of Inspectional Services Fees',
+        sourceUrl: 'https://ecode360.com/29044906',
+        verifiedAt: V2,
+      },
+      {
+        label: 'Change of occupancy',
+        value: '$60',
+        sourceName: 'City of Quincy Code — Department of Inspectional Services Fees',
+        sourceUrl: 'https://ecode360.com/29044906',
+        verifiedAt: V2,
+      },
+    ],
+    penalty: {
+      label: 'Working without a permit',
+      value: 'Double the permit fee, charged from the 6th day after work commences without a permit',
+      sourceName: 'City of Quincy Code — Department of Inspectional Services Fees',
+      sourceUrl: 'https://ecode360.com/29044906',
+      verifiedAt: V2,
+    },
+  },
+  {
+    slug: 'newton-ma',
+    name: 'Newton',
+    county: 'Middlesex',
+    map: { x: 1.12, y: 0.08 },
+    dept: {
+      name: 'Inspectional Services Department',
+      address: '1000 Commonwealth Avenue, Newton, MA 02459',
+      phone: '(617) 796-1060',
+      email: 'ISD@newtonma.gov',
+      url: 'https://www.newtonma.gov/government/inspectional-services',
+    },
+    portal: { vendor: 'OpenGov', url: 'https://newtonma.portal.opengov.com/' },
+    facts: [
+      {
+        label: 'Building permit',
+        value:
+          '$20 per $1,000 of estimated construction cost (rounded up to the nearest thousand) — $50 minimum residential, $100 minimum commercial',
+        sourceName: 'City of Newton — Permit Fee Schedule (PDF)',
+        sourceUrl: 'https://www.newtonma.gov/home/showpublisheddocument/29405/638630352124700000',
+        verifiedAt: V2,
+      },
+    ],
+  },
+  {
+    slug: 'brookline-ma',
+    name: 'Brookline',
+    county: 'Norfolk',
+    map: { x: 1.28, y: 0.1 },
+    dept: {
+      name: 'Building Department',
+      address: '333 Washington Street, Brookline, MA 02445',
+      phone: '(617) 730-2100',
+      url: 'https://www.brooklinema.gov/172/Building-Department',
+    },
+    portal: { vendor: 'Online Permits (town portal)', url: 'https://www.brooklinema.gov/187/Online-Permits' },
+    facts: [
+      {
+        label: 'Building permit',
+        value: '$20 per $1,000 of construction value (or fraction thereof) — $50 minimum',
+        sourceName: 'Town of Brookline — Permit & Fee Schedule',
+        sourceUrl: 'https://www.brooklinema.gov/183/Permit-Fee-Schedule',
+        verifiedAt: V2,
+        effectiveDate: '2022-07-18',
+      },
+      {
+        label: 'Re-inspection / missed final inspection',
+        value: '$50 per re-inspection; $50 if final inspection is not called for within ten working days',
+        sourceName: 'Town of Brookline — Permit & Fee Schedule',
+        sourceUrl: 'https://www.brooklinema.gov/183/Permit-Fee-Schedule',
+        verifiedAt: V2,
+        effectiveDate: '2022-07-18',
+      },
+    ],
+    penalty: {
+      label: 'Working without a permit',
+      value: 'Fee rises to $50 per $1,000 of construction value — 2.5× the normal rate',
+      sourceName: 'Town of Brookline — Permit & Fee Schedule',
+      sourceUrl: 'https://www.brooklinema.gov/183/Permit-Fee-Schedule',
+      verifiedAt: V2,
+      effectiveDate: '2022-07-18',
+    },
+  },
+  {
+    slug: 'brockton-ma',
+    name: 'Brockton',
+    county: 'Plymouth',
+    map: { x: 1.35, y: -0.32 },
+    dept: {
+      name: 'Building Department',
+      address: '45 School Street, Brockton, MA 02301',
+      phone: '(508) 580-7150',
+      url: 'https://brockton.ma.us/city-departments/building/',
+    },
+    facts: [
+      {
+        label: 'Building permit',
+        value: '$100 for the first $5,000 of construction valuation, then $20 per additional $1,000 (or fraction thereof) — $100 minimum',
+        sourceName: 'City of Brockton Code of Ordinances, Ch. 4 (Buildings)',
+        sourceUrl:
+          'https://library.municode.com/ma/brockton/codes/code_of_ordinances?nodeId=PTIIREOR_CH4BU_ARTIVREVAABPR_S4-50MARE',
+        verifiedAt: V2,
+      },
+      {
+        label: 'Inspection scheduling',
+        value: 'Building inspectors available 7:00 AM–3:00 PM weekdays; inspection windows 8:30–10:00 AM and 3:00–4:30 PM',
+        sourceName: 'City of Brockton — Building Department',
+        sourceUrl: 'https://brockton.ma.us/city-departments/building/',
+        verifiedAt: V2,
+      },
+    ],
+  },
+  {
+    slug: 'plymouth-ma',
+    name: 'Plymouth',
+    county: 'Plymouth',
+    map: { x: 1.85, y: -0.42 },
+    dept: {
+      name: 'Department of Inspectional Services',
+      address: '26 Court Street, Plymouth, MA 02360',
+      phone: '(508) 322-3431',
+      url: 'https://www.plymouth-ma.gov/349/Inspectional-Services',
+    },
+    facts: [
+      {
+        label: 'New residential construction',
+        value:
+          '$14 per $1,000 of calculated construction cost (valued at $110/sq ft) — $250 minimum',
+        sourceName: 'Town of Plymouth — Building Fees (PDF)',
+        sourceUrl: 'https://plymouth-ma.gov/DocumentCenter/View/1047/Building-Fees-PDF',
+        verifiedAt: V2,
+        effectiveDate: '2023-02-01',
+      },
+      {
+        label: 'Additions / alterations / renovations',
+        value: '$13 per $1,000 of calculated construction cost (valued at $100/sq ft) — $75 minimum',
+        sourceName: 'Town of Plymouth — Building Fees (PDF)',
+        sourceUrl: 'https://plymouth-ma.gov/DocumentCenter/View/1047/Building-Fees-PDF',
+        verifiedAt: V2,
+        effectiveDate: '2023-02-01',
+      },
+      {
+        label: 'Express permits (roofing, siding, windows/doors)',
+        value: '$75 flat for one; $140 for two combined; $200 for all three',
+        sourceName: 'Town of Plymouth — Building Fees (PDF)',
+        sourceUrl: 'https://plymouth-ma.gov/DocumentCenter/View/1047/Building-Fees-PDF',
+        verifiedAt: V2,
+        effectiveDate: '2023-02-01',
+      },
+      {
+        label: 'Swimming pools',
+        value: 'Above-ground $100; in-ground $200',
+        sourceName: 'Town of Plymouth — Building Fees (PDF)',
+        sourceUrl: 'https://plymouth-ma.gov/DocumentCenter/View/1047/Building-Fees-PDF',
+        verifiedAt: V2,
+        effectiveDate: '2023-02-01',
+      },
+    ],
+  },
+  {
+    slug: 'fall-river-ma',
+    name: 'Fall River',
+    county: 'Bristol',
+    map: { x: 1.05, y: -0.6 },
+    dept: {
+      name: 'Inspectional Services — Building Division',
+      address: 'One Government Center, Room 524, Fall River, MA 02722',
+      phone: '(508) 324-2500',
+      url: 'https://fallriverma.gov/departments/inspectional_services/',
+    },
+    portal: { vendor: 'OpenGov', url: 'https://fallriverma.portal.opengov.com/' },
+    facts: [
+      {
+        label: 'New residential construction',
+        value:
+          '$0.19 per square foot, including basement, decks, porches, and garages — calculated by the Building Inspector',
+        sourceName: 'City of Fall River — New Residential Construction',
+        sourceUrl:
+          'https://www.fallriverma.gov/departments/inspectional_services/building/new_residential_construction.php',
+        verifiedAt: V2,
+      },
+      {
+        label: 'Cost estimates are checked',
+        value:
+          'If the division believes the declared cost estimate is too low, it may set a new value after examination',
+        sourceName: 'City of Fall River Code — Permits (Art. II)',
+        sourceUrl: 'https://ecode360.com/29925770',
+        verifiedAt: V2,
+      },
+    ],
+  },
+  {
+    slug: 'framingham-ma',
+    name: 'Framingham',
+    county: 'Middlesex',
+    map: { x: 0.72, y: 0.02 },
+    dept: {
+      name: 'Inspectional Services — Building Division',
+      address: '150 Concord Street, Room 203, Framingham, MA 01702',
+      url: 'https://www.framinghamma.gov/127/Inspectional-Services',
+    },
+    portal: { vendor: 'OpenGov', url: 'https://framinghamma.portal.opengov.com/' },
+    facts: [
+      {
+        label: 'Building permit (residential & commercial)',
+        value: '$15 per $1,000 of actual construction cost — $50 minimum residential, $100 minimum commercial',
+        sourceName: 'City of Framingham — Building Permit Fees',
+        sourceUrl: 'https://www.framinghamma.gov/324/Building-Permit-Fees',
+        verifiedAt: V2,
+        effectiveDate: '2008-04-01',
+      },
+      {
+        label: 'Occupancy permit',
+        value: '$100 per dwelling or commercial unit',
+        sourceName: 'City of Framingham — Building Permit Fees',
+        sourceUrl: 'https://www.framinghamma.gov/324/Building-Permit-Fees',
+        verifiedAt: V2,
+        effectiveDate: '2008-04-01',
+      },
+      {
+        label: 'Re-inspection',
+        value: '$75 per notice; after-hours inspection $220',
+        sourceName: 'City of Framingham — Building Permit Fees',
+        sourceUrl: 'https://www.framinghamma.gov/324/Building-Permit-Fees',
+        verifiedAt: V2,
+        effectiveDate: '2008-04-01',
+      },
+    ],
+    penalty: {
+      label: 'Working without a permit',
+      value: 'Double the building permit fee',
+      sourceName: 'City of Framingham — Building Permit Fees',
+      sourceUrl: 'https://www.framinghamma.gov/324/Building-Permit-Fees',
+      verifiedAt: V2,
+      effectiveDate: '2008-04-01',
+    },
+  },
+  {
+    slug: 'waltham-ma',
+    name: 'Waltham',
+    county: 'Middlesex',
+    map: { x: 1.1, y: 0.18 },
+    dept: {
+      name: 'Building Department',
+      address: '119 School Street, Government Center 2nd Floor Room 25, Waltham, MA 02451',
+      phone: '(781) 314-3275',
+      url: 'https://www.city.waltham.ma.us/building-department',
+    },
+    facts: [
+      {
+        label: 'Building permit (residential)',
+        value: '$12 per $1,000 of estimated job cost — $50 minimum',
+        sourceName: 'City of Waltham — Building Department FAQ (How much does a permit cost?)',
+        sourceUrl: 'https://www.city.waltham.ma.us/building-department/faq/how-much-does-a-permit-cost',
+        verifiedAt: V2,
+      },
+      {
+        label: 'Building permit (commercial)',
+        value: '$22 per $1,000 of estimated job cost — $100 minimum',
+        sourceName: 'City of Waltham — Building Department FAQ (How much does a permit cost?)',
+        sourceUrl: 'https://www.city.waltham.ma.us/building-department/faq/how-much-does-a-permit-cost',
+        verifiedAt: V2,
+      },
+      {
+        label: 'Plumbing permit (residential)',
+        value: '$25 for the first fixture, $10 each additional',
+        sourceName: 'City of Waltham — Building Department FAQ (How much does a permit cost?)',
+        sourceUrl: 'https://www.city.waltham.ma.us/building-department/faq/how-much-does-a-permit-cost',
+        verifiedAt: V2,
+      },
+    ],
+  },
+  {
+    slug: 'haverhill-ma',
+    name: 'Haverhill',
+    county: 'Essex',
+    map: { x: 1.15, y: 0.74 },
+    dept: {
+      name: 'Inspectional Services — Building Division',
+      address: 'City Hall, 4 Summer Street, Haverhill, MA 01830',
+      phone: '(978) 374-2338',
+      url: 'https://www.haverhillma.gov/living-here/building-and-renovating/building-permits/',
+    },
+    portal: { vendor: 'OpenGov', url: 'https://haverhillma.portal.opengov.com/' },
+    facts: [
+      {
+        label: 'Alterations / additions / repairs',
+        value: '$50 for the first $2,000 of project value, then $14 per additional $1,000 (or portion thereof)',
+        sourceName: 'City of Haverhill — Building Permits',
+        sourceUrl: 'https://www.haverhillma.gov/living-here/building-and-renovating/building-permits/',
+        verifiedAt: V2,
+      },
+      {
+        label: 'New construction',
+        value: '$25 application plus $13 per $1,000 of construction cost (residential and commercial), no maximum',
+        sourceName: 'City of Haverhill Code — Ch. 120 Building Construction (§120-11)',
+        sourceUrl: 'https://ecode360.com/6260745',
+        verifiedAt: V2,
+      },
+      {
+        label: 'Permit card required on site',
+        value: 'The physical permit card must be posted on site before work begins',
+        sourceName: 'City of Haverhill — Building Permits',
+        sourceUrl: 'https://www.haverhillma.gov/living-here/building-and-renovating/building-permits/',
+        verifiedAt: V2,
+      },
+    ],
+  },
+  {
+    slug: 'medford-ma',
+    name: 'Medford',
+    county: 'Middlesex',
+    map: { x: 1.3, y: 0.22 },
+    dept: {
+      name: 'Building Department',
+      address: '85 George P. Hassett Drive, Medford, MA 02155',
+      phone: '(781) 393-2511',
+      url: 'https://www.medfordma.org/departments/building-department',
+    },
+    facts: [
+      {
+        label: 'Building permit (new buildings, additions, alterations, repairs)',
+        value: '$15 per $1,000 of estimated construction cost, plus a $35 application fee',
+        sourceName: 'City of Medford — Schedule of Building Fees (PDF)',
+        sourceUrl:
+          'https://resources.finalsite.net/images/v1650010163/medfordmaorg/l697m7r4b5wtnkxllw5d/201507291032.pdf',
+        verifiedAt: V2,
+        effectiveDate: '2009-07-28',
+      },
+      {
+        label: 'Re-roofing / re-siding',
+        value: '$15 per $1,000 plus $35 application fee (re-siding also takes a $100 refundable bond)',
+        sourceName: 'City of Medford — Schedule of Building Fees (PDF)',
+        sourceUrl:
+          'https://resources.finalsite.net/images/v1650010163/medfordmaorg/l697m7r4b5wtnkxllw5d/201507291032.pdf',
+        verifiedAt: V2,
+        effectiveDate: '2009-07-28',
+      },
+      {
+        label: 'Plan review (new residential structure)',
+        value: '$100',
+        sourceName: 'City of Medford — Schedule of Building Fees (PDF)',
+        sourceUrl:
+          'https://resources.finalsite.net/images/v1650010163/medfordmaorg/l697m7r4b5wtnkxllw5d/201507291032.pdf',
+        verifiedAt: V2,
+        effectiveDate: '2009-07-28',
+      },
+    ],
+    penalty: {
+      label: 'Working without a permit',
+      value: 'QUADRUPLE the permit fee for work started without a building permit',
+      sourceName: 'City of Medford — Schedule of Building Fees (PDF)',
+      sourceUrl:
+        'https://resources.finalsite.net/images/v1650010163/medfordmaorg/l697m7r4b5wtnkxllw5d/201507291032.pdf',
+      verifiedAt: V2,
+      effectiveDate: '2009-07-28',
+    },
+  },
 ]
 
 export const VERIFIED_TOWN_COUNT = TOWN_PROFILES.length
@@ -535,7 +913,7 @@ export const VARIANCE_EXAMPLES: {
   {
     topic: 'Building without a permit',
     a: { town: 'Beverly', fact: 'Double the fee, capped at $1,000 extra' },
-    b: { town: 'Worcester', fact: 'Triple the fee — $500 minimum penalty on residential work' },
-    takeaway: 'The cost of guessing wrong varies 5× between towns 40 miles apart.',
+    b: { town: 'Medford', fact: 'QUADRUPLE the permit fee — no cap' },
+    takeaway: 'The penalty for the same mistake varies 4× or more depending on the town line.',
   },
 ]
