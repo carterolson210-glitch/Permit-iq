@@ -104,7 +104,7 @@ export default function TownProofSection() {
                     setPicked(t)
                     setUnverifiedPick(null)
                   }}
-                  className={`rounded-full px-3 py-1 text-xs font-medium transition ${
+                  className={`rounded-full px-4 py-2 text-xs font-medium transition ${
                     picked?.slug === t.slug && !unverifiedPick
                       ? 'bg-blue-700 text-white'
                       : 'bg-slate-100 text-slate-600 hover:bg-blue-100'

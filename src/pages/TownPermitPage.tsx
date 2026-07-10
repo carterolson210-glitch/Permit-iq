@@ -241,7 +241,7 @@ export default function TownPermitPage() {
               <Link
                 key={t.slug}
                 to={`/permits/${t.slug}`}
-                className="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-700 hover:bg-blue-100 hover:text-blue-700 transition"
+                className="rounded-full bg-slate-100 px-4 py-2 text-sm text-slate-700 hover:bg-blue-100 hover:text-blue-700 transition"
               >
                 {t.name}
               </Link>

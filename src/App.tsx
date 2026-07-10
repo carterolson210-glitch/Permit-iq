@@ -16,6 +16,7 @@ import ResetPassword from './pages/ResetPassword'
 import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
 import TownPermitPage from './pages/TownPermitPage'
+import ErrorBoundary from './components/ErrorBoundary'
 
 function FullPageLoader() {
   return (
@@ -121,13 +122,15 @@ function AnimatedRoutes() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <MotionConfig reducedMotion="user">
-          <ScrollToTop />
-          <AnimatedRoutes />
-        </MotionConfig>
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <AuthProvider>
+          <MotionConfig reducedMotion="user">
+            <ScrollToTop />
+            <AnimatedRoutes />
+          </MotionConfig>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   )
 }

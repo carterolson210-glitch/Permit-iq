@@ -51,7 +51,7 @@ export default function Landing() {
           <div className="flex items-center gap-4">
             <Link
               to={user ? '/analyze' : '/login'}
-              className="text-sm font-medium text-slate-600 hover:text-blue-700 transition"
+              className="px-2 py-2.5 text-sm font-medium text-slate-600 hover:text-blue-700 transition"
             >
               {user ? 'My scans' : 'Sign in'}
             </Link>
