@@ -15,6 +15,11 @@ create table if not exists public.users (
   plan text check (plan in ('free','homeowner','contractor','firm')) default 'free',
   plan_expires_at timestamptz,
   stripe_customer_id text,
+  stripe_subscription_id text,
+  subscription_status text,
+  billing_interval text check (billing_interval in ('monthly','annual')),
+  cancel_at_period_end boolean default false,
+  grace_until timestamptz,
   referral_code text unique,
   referred_by uuid references public.users(id) on delete set null,
   primary_town text,
@@ -22,6 +27,19 @@ create table if not exists public.users (
   free_analyses_used int default 0,
   created_at timestamptz default now()
 );
+
+-- Billing migration for pre-existing databases (idempotent).
+-- Current tiers are free/pro/contractor; homeowner/firm are legacy values
+-- kept valid so old rows never violate the constraint (they gate as
+-- pro/contractor respectively in the app).
+alter table public.users add column if not exists stripe_subscription_id text;
+alter table public.users add column if not exists subscription_status text;
+alter table public.users add column if not exists billing_interval text;
+alter table public.users add column if not exists cancel_at_period_end boolean default false;
+alter table public.users add column if not exists grace_until timestamptz;
+alter table public.users drop constraint if exists users_plan_check;
+alter table public.users add constraint users_plan_check
+  check (plan in ('free','pro','homeowner','contractor','firm'));
 
 -- Auto-create users row on signup
 create or replace function public.handle_new_user()
@@ -255,7 +273,12 @@ begin
     return jsonb_build_object('allowed', false, 'reason', 'no_user');
   end if;
 
-  if u.plan <> 'free' and (u.plan_expires_at is null or u.plan_expires_at > now()) then
+  -- Paid access: an unexpired paid plan, OR a failed-payment grace period
+  -- (grace_until is set by the Stripe webhook on invoice.payment_failed).
+  if u.plan <> 'free' and (
+       (u.plan_expires_at is null or u.plan_expires_at > now())
+       or coalesce(u.grace_until, timestamptz 'epoch') > now()
+     ) then
     insert into public.scan_events (user_id, status, consumed_free_scan, town, category)
     values (p_user_id, 'started', false, p_town, p_category)
     returning id into v_event;

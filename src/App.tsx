@@ -17,6 +17,7 @@ import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
 import TownPermitPage from './pages/TownPermitPage'
 import ErrorBoundary from './components/ErrorBoundary'
+import GraceBanner from './components/GraceBanner'
 
 function FullPageLoader() {
   return (
@@ -127,6 +128,7 @@ export default function App() {
         <AuthProvider>
           <MotionConfig reducedMotion="user">
             <ScrollToTop />
+            <GraceBanner />
             <AnimatedRoutes />
           </MotionConfig>
         </AuthProvider>

@@ -198,73 +198,78 @@ export default function Landing() {
           </div>
 
           <div className="mt-12 grid gap-6 md:grid-cols-3">
-            {/* Homeowner */}
+            {/* Free */}
             <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-              <h3 className="text-lg font-semibold text-slate-900">Homeowner</h3>
+              <h3 className="text-lg font-semibold text-slate-900">Free</h3>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-slate-900">$19</span>
-                <span className="text-slate-500">one-time</span>
+                <span className="text-4xl font-extrabold text-slate-900">$0</span>
               </div>
               <ul className="mt-6 space-y-3 text-sm text-slate-600 flex-1">
-                <li className="flex gap-2"><Check /> One permit checklist</li>
-                <li className="flex gap-2"><Check /> Document list</li>
-                <li className="flex gap-2"><Check /> Fee estimate</li>
-                <li className="flex gap-2"><Check /> Town office contact</li>
-                <li className="flex gap-2"><Check /> PDF export</li>
+                <li className="flex gap-2"><Check /> 3 permit scans</li>
+                <li className="flex gap-2"><Check /> Town requirement summaries</li>
+                <li className="flex gap-2"><Check /> Watermarked PDF export</li>
+                <li className="flex gap-2"><Check /> No credit card required</li>
               </ul>
-              <button
-                onClick={() => handleCheckout('homeowner', 'once')}
-                disabled={checkoutLoading !== null}
-                className="mt-8 inline-flex items-center justify-center rounded-md border border-blue-700 px-4 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              <Link
+                to="/analyze"
+                className="mt-8 inline-flex items-center justify-center rounded-md border border-blue-700 px-4 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition"
               >
-                {checkoutLoading === 'homeowner' ? 'Redirecting…' : 'Get started'}
-              </button>
+                Start free
+              </Link>
             </div>
 
-            {/* Contractor (most popular) */}
+            {/* Pro (most popular) */}
             <div className="relative flex flex-col rounded-2xl border-2 border-blue-700 bg-white p-8 shadow-lg md:-translate-y-2">
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-green-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow">
                 Most Popular
               </span>
-              <h3 className="text-lg font-semibold text-blue-700">Contractor</h3>
+              <h3 className="text-lg font-semibold text-blue-700">Pro</h3>
               <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-slate-900">$49</span>
+                <span className="text-4xl font-extrabold text-slate-900">$29</span>
                 <span className="text-slate-500">/month</span>
               </div>
+              <p className="mt-1 text-xs font-semibold text-green-700">
+                or $290/yr — 2 months free
+              </p>
               <ul className="mt-6 space-y-3 text-sm text-slate-600 flex-1">
-                <li className="flex gap-2"><Check /> Unlimited checklists</li>
-                <li className="flex gap-2"><Check /> Save projects</li>
-                <li className="flex gap-2"><Check /> Client sharing</li>
-                <li className="flex gap-2"><Check /> Priority AI</li>
+                <li className="flex gap-2"><Check /> Unlimited permit scans</li>
+                <li className="flex gap-2"><Check /> Rejection-prevention analysis</li>
+                <li className="flex gap-2"><Check /> Document checklists &amp; timelines</li>
+                <li className="flex gap-2"><Check /> Unwatermarked PDF export</li>
+                <li className="flex gap-2"><Check /> Saved projects</li>
+              </ul>
+              <button
+                onClick={() => handleCheckout('pro', 'monthly')}
+                disabled={checkoutLoading !== null}
+                className="mt-8 inline-flex items-center justify-center rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow hover:bg-blue-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {checkoutLoading === 'pro' ? 'Redirecting…' : 'Get Pro'}
+              </button>
+            </div>
+
+            {/* Contractor */}
+            <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+              <h3 className="text-lg font-semibold text-slate-900">Contractor</h3>
+              <div className="mt-4 flex items-baseline gap-1">
+                <span className="text-4xl font-extrabold text-slate-900">$79</span>
+                <span className="text-slate-500">/month</span>
+              </div>
+              <p className="mt-1 text-xs font-semibold text-green-700">
+                or $790/yr — 2 months free
+              </p>
+              <ul className="mt-6 space-y-3 text-sm text-slate-600 flex-1">
+                <li className="flex gap-2"><Check /> Everything in Pro</li>
+                <li className="flex gap-2"><Check /> Multi-project dashboard</li>
+                <li className="flex gap-2"><Check /> Up to 5 team seats</li>
+                <li className="flex gap-2"><Check /> Client-shareable branded reports</li>
+                <li className="flex gap-2"><Check /> Permit deadline reminders</li>
               </ul>
               <button
                 onClick={() => handleCheckout('contractor', 'monthly')}
                 disabled={checkoutLoading !== null}
-                className="mt-8 inline-flex items-center justify-center rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow hover:bg-blue-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {checkoutLoading === 'contractor' ? 'Redirecting…' : 'Start free trial'}
-              </button>
-            </div>
-
-            {/* Firm */}
-            <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
-              <h3 className="text-lg font-semibold text-slate-900">Firm</h3>
-              <div className="mt-4 flex items-baseline gap-1">
-                <span className="text-4xl font-extrabold text-slate-900">$99</span>
-                <span className="text-slate-500">/month</span>
-              </div>
-              <ul className="mt-6 space-y-3 text-sm text-slate-600 flex-1">
-                <li className="flex gap-2"><Check /> Everything in Contractor</li>
-                <li className="flex gap-2"><Check /> Team seats</li>
-                <li className="flex gap-2"><Check /> White-label PDF</li>
-                <li className="flex gap-2"><Check /> API access</li>
-              </ul>
-              <button
-                onClick={() => handleCheckout('firm', 'monthly')}
-                disabled={checkoutLoading !== null}
                 className="mt-8 inline-flex items-center justify-center rounded-md border border-blue-700 px-4 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {checkoutLoading === 'firm' ? 'Redirecting…' : 'Contact sales'}
+                {checkoutLoading === 'contractor' ? 'Redirecting…' : 'Get Contractor'}
               </button>
             </div>
           </div>

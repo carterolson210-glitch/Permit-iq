@@ -18,8 +18,12 @@ type AuthCtx = {
   loading: boolean
   profile: UserProfile | null
   profileLoading: boolean
-  /** True when the user has a paid plan that has not expired. */
+  /** True when the user has a paid plan that has not expired (or is in grace). */
   isPaid: boolean
+  /** Effective feature tier; legacy homeowner/firm plans gate as pro/contractor. */
+  tier: 'free' | 'pro' | 'contractor'
+  /** True while a failed payment is inside its 7-day grace window. */
+  inGrace: boolean
   /** Free scans left, or null for unlimited (paid) plans / unknown (profile loading). */
   scansRemaining: number | null
   refreshProfile: () => Promise<void>
@@ -33,6 +37,8 @@ const AuthContext = createContext<AuthCtx>({
   profile: null,
   profileLoading: false,
   isPaid: false,
+  tier: 'free',
+  inGrace: false,
   scansRemaining: null,
   refreshProfile: async () => {},
   signOut: async () => {},
@@ -97,11 +103,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null)
   }
 
+  const now = new Date()
+  const inGrace = Boolean(
+    profile &&
+      profile.plan !== 'free' &&
+      profile.grace_until &&
+      new Date(profile.grace_until) > now
+  )
   const isPaid = Boolean(
     profile &&
       profile.plan !== 'free' &&
-      (!profile.plan_expires_at || new Date(profile.plan_expires_at) > new Date())
+      ((!profile.plan_expires_at || new Date(profile.plan_expires_at) > now) || inGrace)
   )
+  const tier: 'free' | 'pro' | 'contractor' = !isPaid
+    ? 'free'
+    : profile!.plan === 'contractor' || profile!.plan === 'firm'
+      ? 'contractor'
+      : 'pro'
 
   const scansRemaining =
     profile && !isPaid
@@ -117,6 +135,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         profileLoading,
         isPaid,
+        tier,
+        inGrace,
         scansRemaining,
         refreshProfile,
         signOut,

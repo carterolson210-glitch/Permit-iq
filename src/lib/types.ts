@@ -1,4 +1,12 @@
-export type Plan = 'free' | 'homeowner' | 'contractor' | 'firm'
+// 'homeowner' and 'firm' are legacy plan values (gated as pro/contractor).
+export type Plan = 'free' | 'pro' | 'homeowner' | 'contractor' | 'firm'
+export type SubscriptionStatus =
+  | 'active'
+  | 'trialing'
+  | 'past_due'
+  | 'unpaid'
+  | 'canceled'
+  | null
 export type Role = 'homeowner' | 'contractor' | 'firm'
 export type ProjectStatus =
   | 'not_started'
@@ -15,6 +23,11 @@ export interface UserProfile {
   plan: Plan
   plan_expires_at: string | null
   stripe_customer_id: string | null
+  stripe_subscription_id: string | null
+  subscription_status: SubscriptionStatus
+  billing_interval: 'monthly' | 'annual' | null
+  cancel_at_period_end: boolean | null
+  grace_until: string | null
   referral_code: string | null
   referred_by: string | null
   primary_town: string | null

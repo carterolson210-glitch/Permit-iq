@@ -1,36 +1,20 @@
 import { functionUrl, supabase } from './supabase'
+import type { Billing, PlanKey } from './plans'
 
-export type PlanKey = 'homeowner' | 'contractor' | 'firm'
-export type Billing = 'monthly' | 'annual' | 'once'
+export type { Billing, PlanKey }
 
-const PRICE_IDS: Record<PlanKey, Partial<Record<Billing, string>>> = {
-  homeowner: {
-    once: import.meta.env.VITE_STRIPE_PRICE_HOMEOWNER as string,
-  },
-  contractor: {
-    monthly: import.meta.env.VITE_STRIPE_PRICE_CONTRACTOR_MONTHLY as string,
-    annual: import.meta.env.VITE_STRIPE_PRICE_CONTRACTOR_ANNUAL as string,
-  },
-  firm: {
-    monthly: import.meta.env.VITE_STRIPE_PRICE_FIRM_MONTHLY as string,
-    annual: import.meta.env.VITE_STRIPE_PRICE_FIRM_ANNUAL as string,
-  },
-}
-
-export async function startCheckout(plan: PlanKey, billing: Billing) {
-  const priceId = PRICE_IDS[plan]?.[billing]
-  if (!priceId) {
-    throw new Error('Stripe price ID is not configured for this plan.')
-  }
+async function callBillingFunction(
+  name: 'stripe-checkout' | 'stripe-portal',
+  body: Record<string, unknown>
+): Promise<{ url: string }> {
   const { data: session } = await supabase.auth.getSession()
-  const user = session.session?.user
-  if (!user) {
-    window.location.href = `/login?next=${encodeURIComponent('/#pricing')}`
-    return
+  if (!session.session) {
+    window.location.href = `/login?next=${encodeURIComponent('/pricing')}`
+    throw new Error('Please sign in first.')
   }
 
-  const url = functionUrl('stripe-checkout')
-  if (!url) throw new Error('Checkout is not configured yet. Please try again later.')
+  const url = functionUrl(name)
+  if (!url) throw new Error('Billing is not configured yet. Please try again later.')
 
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), 30_000)
@@ -40,30 +24,38 @@ export async function startCheckout(plan: PlanKey, billing: Billing) {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        authorization: `Bearer ${session.session?.access_token}`,
+        authorization: `Bearer ${session.session.access_token}`,
         apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
       },
-      body: JSON.stringify({
-        price_id: priceId,
-        mode: billing === 'once' ? 'payment' : 'subscription',
-        user_id: user.id,
-        user_email: user.email,
-        plan_name: plan,
-      }),
+      body: JSON.stringify(body),
       signal: controller.signal,
     })
   } catch {
     throw new Error(
-      'Could not reach the checkout service — check your connection and try again. You have not been charged.'
+      'Could not reach the billing service — check your connection and try again. You have not been charged.'
     )
   } finally {
     clearTimeout(timer)
   }
 
   if (!resp.ok) {
-    const body = await resp.json().catch(() => ({}))
-    throw new Error(body?.error ?? 'Could not start checkout. You have not been charged.')
+    const payload = await resp.json().catch(() => ({}))
+    throw new Error(payload?.error ?? 'Billing request failed. You have not been charged.')
   }
-  const { url: redirectUrl } = (await resp.json()) as { url: string }
-  window.location.href = redirectUrl
+  return (await resp.json()) as { url: string }
+}
+
+/**
+ * Start a Stripe hosted Checkout session. The server maps plan+billing to a
+ * Stripe price ID from its own secrets — the client never chooses a price.
+ */
+export async function startCheckout(plan: PlanKey, billing: Billing) {
+  const { url } = await callBillingFunction('stripe-checkout', { plan, billing })
+  window.location.href = url
+}
+
+/** Open Stripe's hosted customer portal (self-manage billing/cancel/upgrade). */
+export async function openBillingPortal() {
+  const { url } = await callBillingFunction('stripe-portal', {})
+  window.location.href = url
 }
