@@ -53,3 +53,18 @@ newest last. Flag anything here you want changed.
 11. **Landing keeps its own compact pricing cards** linking into checkout
     directly; `/pricing` is the canonical comparison/FAQ page and the target
     of paywall & banner links.
+
+## Phase 3 — Trust infrastructure
+
+12. **Per-town `verified_at` already existed** as `verifiedAt` on every
+    sourced fact in `townPermits.ts` (per-fact, which is stronger than
+    per-town); it now also surfaces on /how-we-verify's town table. No new
+    data model field was needed.
+13. **Per-requirement citations** come from the model (`source` on each
+    permit in the report), instructed to return null rather than invent
+    URLs. Reports render "general Massachusetts guidance (780 CMR)" when
+    there's no confident source — honesty over decoration.
+14. **Testimonials ship as an empty array** (`SocialProof.tsx`) — the section
+    renders nothing until you paste real quotes in. Scans counter reads real
+    DB counts via a `scan_stats()` SQL function (aggregate only, anon-safe)
+    and stays hidden below 100.
