@@ -352,6 +352,30 @@ revoke all on function public.refund_scan(uuid) from public, anon, authenticated
 revoke all on function public.finish_scan(uuid, text) from public, anon, authenticated;
 
 -- ─────────────────────────────────────────────────────────────
+-- Anonymous first scans (activation): full analysis runs before signup and
+-- is stashed here; the report unlocks after account creation ("claim"),
+-- consuming one of the account's 3 free scans. Service-role access only.
+-- ─────────────────────────────────────────────────────────────
+create table if not exists public.anon_scans (
+  id uuid primary key default gen_random_uuid(),
+  token uuid unique not null default gen_random_uuid(),
+  ip_hash text not null,
+  town text not null,
+  category text,
+  description text not null,
+  analysis jsonb not null,
+  created_at timestamptz not null default now(),
+  claimed_by uuid references public.users(id) on delete set null,
+  claimed_at timestamptz
+);
+create index if not exists anon_scans_ip_recent_idx on public.anon_scans(ip_hash, created_at desc);
+alter table public.anon_scans enable row level security;
+-- no policies: only the service role (edge functions) touches this table
+
+-- Track the one-time welcome email
+alter table public.users add column if not exists welcomed_at timestamptz;
+
+-- ─────────────────────────────────────────────────────────────
 -- Public aggregate stats (social proof). Exposes ONLY counts — never rows.
 -- The UI hides the counter below a threshold; numbers are always real.
 -- ─────────────────────────────────────────────────────────────
