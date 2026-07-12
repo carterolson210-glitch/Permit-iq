@@ -4,12 +4,21 @@ import { startCheckout } from '../lib/stripe'
 import { PLAN_DEFS, annualSavingsLabel, type Billing, type PlanKey } from '../lib/plans'
 import { fadeUp, staggerChildren } from '../lib/motionVariants'
 import { FREE_SCAN_LIMIT } from '../lib/auth'
+import type { ScanPreview } from '../lib/anthropic'
 
 /**
  * Upgrade screen shown when a free account has used all its scans
  * (or when the server rejects a scan with code `scan_limit`).
+ * When the server produced a metadata preview of the blocked scan, it is
+ * rendered as a locked report card — value first, wall second.
  */
-export default function Paywall({ message }: { message?: string }) {
+export default function Paywall({
+  message,
+  preview,
+}: {
+  message?: string
+  preview?: ScanPreview
+}) {
   const [billing, setBilling] = useState<Billing>('annual')
   const [busyPlan, setBusyPlan] = useState<PlanKey | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -39,13 +48,66 @@ export default function Paywall({ message }: { message?: string }) {
           {FREE_SCAN_LIMIT} of {FREE_SCAN_LIMIT} free scans used
         </span>
         <h1 className="mt-4 text-3xl sm:text-4xl font-extrabold tracking-tight text-ink">
-          You've used your free scans
+          {preview ? 'Your report is ready to unlock' : "You've used your free scans"}
         </h1>
         <p className="mt-3 text-ink-muted">
           {message ??
             'Upgrade to keep analyzing projects. Every plan includes town-specific permit checklists, fee estimates, and document lists.'}
         </p>
       </motion.div>
+
+      {preview && (
+        <motion.div
+          variants={fadeUp}
+          className="mx-auto mt-8 max-w-2xl overflow-hidden rounded-2xl border border-line bg-white shadow-card"
+        >
+          <div className="border-b border-line bg-slate-50 px-6 py-4 text-left">
+            <p className="text-sm text-ink">
+              We analyzed your project and found{' '}
+              <strong className="text-primary">
+                {preview.permit_count} permit{preview.permit_count === 1 ? '' : 's'}
+              </strong>{' '}
+              required in <strong>{preview.town}</strong>
+              {preview.commonly_missed_count > 0 && (
+                <>
+                  , including{' '}
+                  <strong className="text-red-600">
+                    {preview.commonly_missed_count} that{' '}
+                    {preview.commonly_missed_count === 1 ? 'is' : 'are'} commonly missed
+                  </strong>
+                </>
+              )}
+              {preview.timeline_estimate && (
+                <>
+                  . Estimated approval timeline: <strong>{preview.timeline_estimate}</strong>
+                </>
+              )}
+              .
+            </p>
+          </div>
+          <div className="relative px-6 py-5 text-left" aria-hidden="true">
+            <ul className="space-y-3 blur-[6px] select-none">
+              {(preview.permit_names.length > 0
+                ? preview.permit_names
+                : ['Building Permit', 'Zoning Review', 'Trade Permit']
+              ).map((name, i) => (
+                <li key={i} className="flex items-center gap-3">
+                  <span className="h-5 w-5 flex-none rounded-full bg-slate-200" />
+                  <span className="text-sm text-ink">{name} — requirements, fees, documents…</span>
+                </li>
+              ))}
+            </ul>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <span className="inline-flex items-center gap-2 rounded-full bg-ink/80 px-4 py-2 text-sm font-semibold text-white shadow-lg">
+                <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden="true">
+                  <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+                </svg>
+                Unlock the full report
+              </span>
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {error && (
         <motion.p

@@ -229,7 +229,7 @@ create policy "referrals_referrer_insert" on public.referrals
 create table if not exists public.scan_events (
   id uuid primary key default uuid_generate_v4(),
   user_id uuid not null references public.users(id) on delete cascade,
-  status text check (status in ('started','succeeded','failed','refunded')) default 'started',
+  status text check (status in ('started','succeeded','failed','refunded','preview')) default 'started',
   consumed_free_scan boolean not null default false,
   town text,
   category text,
@@ -238,6 +238,12 @@ create table if not exists public.scan_events (
 
 create index if not exists scan_events_user_recent_idx
   on public.scan_events(user_id, created_at desc);
+
+-- Migration for pre-existing databases: 'preview' rows track the
+-- metadata-only paywall previews (rate-limited per day, never consume scans).
+alter table public.scan_events drop constraint if exists scan_events_status_check;
+alter table public.scan_events add constraint scan_events_status_check
+  check (status in ('started','succeeded','failed','refunded','preview'));
 
 alter table public.scan_events enable row level security;
 

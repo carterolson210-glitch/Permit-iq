@@ -11,12 +11,24 @@ export type AnalyzeErrorCode =
   | 'timeout'
   | 'unknown'
 
+/** Metadata-only teaser returned with `scan_limit` errors (never full content). */
+export interface ScanPreview {
+  town: string
+  permit_count: number
+  commonly_missed_count: number
+  permit_names: string[]
+  timeline_estimate: string | null
+}
+
 export class AnalyzeError extends Error {
   code: AnalyzeErrorCode
-  constructor(message: string, code: AnalyzeErrorCode) {
+  /** Present on scan_limit errors when the server produced a locked preview. */
+  preview?: ScanPreview
+  constructor(message: string, code: AnalyzeErrorCode, preview?: ScanPreview) {
     super(message)
     this.name = 'AnalyzeError'
     this.code = code
+    this.preview = preview
   }
 }
 
@@ -89,7 +101,11 @@ export async function analyzeProject(input: AnalyzeInput): Promise<AnalyzeResult
   const body = await resp.json().catch(() => ({}))
   if (!resp.ok) {
     const code = KNOWN_CODES.includes(body?.code) ? (body.code as AnalyzeErrorCode) : 'unknown'
-    throw new AnalyzeError(body?.error ?? 'Analysis failed. Please try again.', code)
+    const preview =
+      code === 'scan_limit' && body?.preview && typeof body.preview.permit_count === 'number'
+        ? (body.preview as ScanPreview)
+        : undefined
+    throw new AnalyzeError(body?.error ?? 'Analysis failed. Please try again.', code, preview)
   }
   return {
     analysis: body.analysis as PermitAnalysis,

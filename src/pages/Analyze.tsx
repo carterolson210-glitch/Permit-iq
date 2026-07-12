@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { MA_TOWNS } from '../data/towns'
-import { analyzeProject, AnalyzeError } from '../lib/anthropic'
+import { analyzeProject, AnalyzeError, type ScanPreview } from '../lib/anthropic'
 import { useAuth } from '../lib/auth'
 import { StatusBanner } from '../lib/motion'
 import { fadeUp, staggerChildren } from '../lib/motionVariants'
@@ -61,6 +61,7 @@ export default function Analyze() {
   const [analysis, setAnalysis] = useState<PermitAnalysis | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [paywall, setPaywall] = useState<string | null>(null)
+  const [lockedPreview, setLockedPreview] = useState<ScanPreview | null>(null)
   const [checked, setChecked] = useState<Set<number>>(new Set())
   const [openMistakes, setOpenMistakes] = useState<Set<number>>(new Set())
   const [openTips, setOpenTips] = useState<Set<number>>(new Set())
@@ -129,6 +130,7 @@ export default function Analyze() {
           setPaywall(
             'That scan could not start because all 3 free scans on your account have been used.'
           )
+          if (e.preview) setLockedPreview(e.preview)
           void refreshProfile()
           return
         }
@@ -201,7 +203,7 @@ export default function Analyze() {
 
       <main className="mx-auto max-w-5xl px-4 sm:px-6 py-10 sm:py-14">
         {outOfScans ? (
-          <Paywall message={paywall ?? undefined} />
+          <Paywall message={paywall ?? undefined} preview={lockedPreview ?? undefined} />
         ) : (
           <>
             {step === 'input' && (
@@ -462,6 +464,20 @@ export default function Analyze() {
 
             {step === 'scanning' && <ScanAnimation town={town} documentName={file?.name} />}
 
+            {step === 'results' && analysis && !isPaid && scansRemaining === 0 && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-6 rounded-xl border border-blue-200 bg-blue-50 px-5 py-4 text-sm text-blue-900 print:hidden"
+              >
+                <strong>That was your last free scan.</strong> Pro adds unlimited scans,
+                rejection-prevention analysis, unwatermarked PDF exports, and saved projects —{' '}
+                <Link to="/pricing" className="font-semibold underline hover:text-blue-700">
+                  see plans from $29/mo
+                </Link>
+                .
+              </motion.div>
+            )}
             {step === 'results' && analysis && (
               <Results
                 analysis={analysis}

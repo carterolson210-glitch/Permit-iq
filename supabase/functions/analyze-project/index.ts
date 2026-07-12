@@ -173,11 +173,18 @@ Deno.serve(async (req: Request) => {
   }
   if (!reservation.allowed) {
     if (reservation.reason === 'limit') {
+      // Highest-intent moment in the product: instead of a dead end, run a
+      // cheap metadata-only analysis and return a locked preview of what the
+      // full report would contain. Never returns report *content*.
+      const preview = await generateLockedPreview(
+        admin, apiKey, user.id, description, town, category || null
+      )
       return json(
         {
           error: 'You have used all 3 free scans. Upgrade to continue.',
           code: 'scan_limit',
           scans_remaining: 0,
+          preview,
         },
         402, cors
       )
@@ -249,6 +256,87 @@ Deno.serve(async (req: Request) => {
     )
   }
 })
+
+const PREVIEW_LIMIT_PER_DAY = 3
+
+const PREVIEW_SYSTEM_PROMPT = `You are an expert Massachusetts building permit consultant. Given a project description and town, respond with ONLY this JSON (no fences, no preamble):
+{"permit_count": <number of distinct permits/approvals realistically required>, "commonly_missed_count": <how many of those are commonly missed by applicants, 0-3>, "permit_names": [<up to 5 short permit names, e.g. "Building Permit", "Electrical Permit">], "timeline_estimate": "<realistic overall range, e.g. 4-8 weeks>"}
+Be realistic and specific to Massachusetts (780 CMR + local practice). This metadata teases a full report; do not include fees, requirements, or advice.`
+
+/**
+ * Metadata-only analysis for the paywall preview. Strictly rate-limited
+ * (PREVIEW_LIMIT_PER_DAY per user, tracked as 'preview' scan_events) and
+ * returns null on any failure — the paywall then renders without a preview.
+ */
+async function generateLockedPreview(
+  admin: ReturnType<typeof createClient>,
+  apiKey: string,
+  userId: string,
+  description: string,
+  town: string,
+  category: string | null
+): Promise<Record<string, unknown> | null> {
+  try {
+    const dayAgo = new Date(Date.now() - 24 * 3600_000).toISOString()
+    const { count } = await admin
+      .from('scan_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId)
+      .eq('status', 'preview')
+      .gte('created_at', dayAgo)
+    if ((count ?? 0) >= PREVIEW_LIMIT_PER_DAY) return null
+
+    await admin.from('scan_events').insert({
+      user_id: userId,
+      status: 'preview',
+      consumed_free_scan: false,
+      town,
+      category,
+    })
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-6',
+        max_tokens: 400,
+        system: PREVIEW_SYSTEM_PROMPT,
+        messages: [
+          {
+            role: 'user',
+            content: `Project: ${description.slice(0, 800)}\nTown: ${town}, Massachusetts${category ? `\nCategory: ${category}` : ''}`,
+          },
+        ],
+      }),
+    })
+    if (!resp.ok) return null
+    const data = await resp.json()
+    const text = data?.content?.find((c: { type: string }) => c.type === 'text')?.text ?? ''
+    const first = text.indexOf('{')
+    const last = text.lastIndexOf('}')
+    if (first === -1 || last === -1) return null
+    const obj = JSON.parse(text.slice(first, last + 1))
+    const permitCount = Number(obj.permit_count)
+    if (!Number.isFinite(permitCount) || permitCount < 1 || permitCount > 20) return null
+    return {
+      town,
+      permit_count: Math.round(permitCount),
+      commonly_missed_count: Math.min(Math.max(Number(obj.commonly_missed_count) || 0, 0), 3),
+      permit_names: Array.isArray(obj.permit_names)
+        ? obj.permit_names.slice(0, 5).map((n: unknown) => String(n).slice(0, 60))
+        : [],
+      timeline_estimate:
+        typeof obj.timeline_estimate === 'string' ? obj.timeline_estimate.slice(0, 40) : null,
+    }
+  } catch (err) {
+    console.error('preview generation failed:', err)
+    return null
+  }
+}
 
 function toBoundedInt(v: unknown, min: number, max: number): number | null {
   const n = typeof v === 'number' ? v : typeof v === 'string' && v !== '' ? Number(v) : NaN
