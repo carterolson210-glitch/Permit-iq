@@ -40,6 +40,7 @@ export type TownPermitProfile = {
 
 const V = '2026-07-07' // first verification pass
 const V2 = '2026-07-10' // second verification pass (expansion batch)
+const V3 = '2026-07-12' // third verification pass (expansion batch)
 
 export const TOWN_PROFILES: TownPermitProfile[] = [
   {
@@ -870,6 +871,390 @@ export const TOWN_PROFILES: TownPermitProfile[] = [
       verifiedAt: V2,
       effectiveDate: '2009-07-28',
     },
+  },
+  {
+    slug: 'lawrence-ma',
+    name: 'Lawrence',
+    county: 'Essex',
+    map: { x: 1.0, y: 0.66 },
+    dept: {
+      name: 'Inspectional Services Department',
+      address: '200 Common Street, 2nd Floor, Room 209, Lawrence, MA 01840',
+      phone: '(978) 620-3130',
+      url: 'https://www.cityoflawrence.com/363/Inspectional-Services',
+    },
+    portal: { vendor: 'Citizenserve', url: 'https://www.citizenserve.com/lawrence' },
+    facts: [
+      {
+        label: 'Building permit (new construction, additions, alterations)',
+        value: '$12 per $1,000 of construction valuation',
+        sourceName: 'City of Lawrence — Inspectional Services Department Fees',
+        sourceUrl: 'https://www.cityoflawrence.com/708/Inspectional-Services-Department-Fees',
+        verifiedAt: V3,
+      },
+      {
+        label: 'Occupancy permit & re-inspections',
+        value: 'Occupancy permit $75; re-inspection $50; missed inspection appointment $50',
+        sourceName: 'City of Lawrence — Inspectional Services Department Fees',
+        sourceUrl: 'https://www.cityoflawrence.com/708/Inspectional-Services-Department-Fees',
+        verifiedAt: V3,
+      },
+    ],
+  },
+  {
+    slug: 'malden-ma',
+    name: 'Malden',
+    county: 'Middlesex',
+    map: { x: 1.38, y: 0.26 },
+    dept: {
+      name: 'Inspectional Services Department',
+      address: '215 Pleasant Street, 3rd Floor, Room 330, Malden, MA 02148',
+      phone: '(781) 397-7030',
+      url: 'https://www.cityofmalden.org/182/Inspectional-Services',
+    },
+    portal: {
+      vendor: 'Tyler EnerGov (city self-service portal)',
+      url: 'https://maldenma-energovweb.tylerhost.net/apps/SelfService',
+    },
+    facts: [
+      {
+        label: 'Building permit (single- & two-family)',
+        value: '$13 per $1,000 of estimated construction cost — $40 minimum',
+        sourceName: 'City of Malden — Building Permit Fees',
+        sourceUrl: 'https://www.cityofmalden.org/204/Building-Permit-Fees',
+        verifiedAt: V3,
+      },
+      {
+        label: 'Building permit (three-family & above / commercial)',
+        value: '$16 per $1,000 of estimated cost, plus a $75–$250 plan review fee by project size — $75 minimum',
+        sourceName: 'City of Malden — Building Permit Fees',
+        sourceUrl: 'https://www.cityofmalden.org/204/Building-Permit-Fees',
+        verifiedAt: V3,
+      },
+      {
+        label: 'Certificate of occupancy',
+        value: 'Single-family $75; two-family $95; three-family $115; commercial/retail $125',
+        sourceName: 'City of Malden — Building Permit Fees',
+        sourceUrl: 'https://www.cityofmalden.org/204/Building-Permit-Fees',
+        verifiedAt: V3,
+      },
+    ],
+    penalty: {
+      label: 'Working without a permit',
+      value: 'TRIPLE the permit fee for work started without a permit',
+      sourceName: 'City of Malden — Building Permit Fees',
+      sourceUrl: 'https://www.cityofmalden.org/204/Building-Permit-Fees',
+      verifiedAt: V3,
+    },
+  },
+  {
+    slug: 'peabody-ma',
+    name: 'Peabody',
+    county: 'Essex',
+    map: { x: 1.45, y: 0.32 },
+    dept: {
+      name: 'Inspectional Services Department',
+      address: '24 Lowell Street, Peabody, MA 01960',
+      phone: '(978) 538-5786',
+      url: 'https://www.peabody-ma.gov/inspectors.html',
+    },
+    portal: {
+      vendor: 'OpenGov (online only — no walk-in applications)',
+      url: 'https://peabodyma.portal.opengov.com/',
+    },
+    facts: [
+      {
+        label: 'Building permit (new construction, additions, alterations, demolition)',
+        value:
+          '$15 per $1,000 (one- and two-family) or $20 per $1,000 (all other buildings) of total construction value — $75 minimum, value rounded up to the next $1,000',
+        sourceName: 'City of Peabody — Building Permit Fees (PDF)',
+        sourceUrl: 'https://peabody-ma.gov/inspector/PermitFees.pdf',
+        verifiedAt: V3,
+      },
+      {
+        label: 'Certificate of occupancy (existing buildings)',
+        value: '$125; re-inspection for incomplete work $75',
+        sourceName: 'City of Peabody — Building Permit Fees (PDF)',
+        sourceUrl: 'https://peabody-ma.gov/inspector/PermitFees.pdf',
+        verifiedAt: V3,
+      },
+    ],
+    penalty: {
+      label: 'Working without a permit',
+      value: 'DOUBLE (2×) the original permit fee for work done without a permit',
+      sourceName: 'City of Peabody — Building Permit Fees (PDF)',
+      sourceUrl: 'https://peabody-ma.gov/inspector/PermitFees.pdf',
+      verifiedAt: V3,
+    },
+  },
+  {
+    slug: 'revere-ma',
+    name: 'Revere',
+    county: 'Suffolk',
+    map: { x: 1.48, y: 0.18 },
+    dept: {
+      name: 'Building Division',
+      address: 'American Legion Building (basement), 249R Broadway, Revere, MA 02151',
+      phone: '(781) 286-8196',
+      url: 'https://www.revere.org/departments/building-division',
+    },
+    portal: { vendor: 'Citizenserve', url: 'https://www.revere.org/permitting' },
+    facts: [
+      {
+        label: 'Building permit (one- & two-family)',
+        value: '$12 per $1,000 of construction cost, plus a $50 application fee on every building permit',
+        sourceName: 'City of Revere Building Department — Fee Schedule (PDF)',
+        sourceUrl: 'https://files.aptuitivcdn.com/GB7r14nbKy-1182/docs/fee-schedule-Building.pdf',
+        verifiedAt: V3,
+      },
+      {
+        label: 'Building permit (commercial & 3+ family)',
+        value:
+          '$15 per $1,000 of contract value, plus a tiered plan review fee ($200 at $20,000 up to $3,500 at $500,000)',
+        sourceName: 'City of Revere Building Department — Fee Schedule (PDF)',
+        sourceUrl: 'https://files.aptuitivcdn.com/GB7r14nbKy-1182/docs/fee-schedule-Building.pdf',
+        verifiedAt: V3,
+      },
+      {
+        label: 'Certificate of occupancy (single-family)',
+        value: '$100 with a building permit — $200 without one',
+        sourceName: 'City of Revere Building Department — Fee Schedule (PDF)',
+        sourceUrl: 'https://files.aptuitivcdn.com/GB7r14nbKy-1182/docs/fee-schedule-Building.pdf',
+        verifiedAt: V3,
+      },
+    ],
+    penalty: {
+      label: 'Working without a permit',
+      value: 'ALL fees are doubled when work is done without permits',
+      sourceName: 'City of Revere Building Department — Fee Schedule (PDF)',
+      sourceUrl: 'https://files.aptuitivcdn.com/GB7r14nbKy-1182/docs/fee-schedule-Building.pdf',
+      verifiedAt: V3,
+    },
+  },
+  {
+    slug: 'taunton-ma',
+    name: 'Taunton',
+    county: 'Bristol',
+    map: { x: 1.2, y: -0.45 },
+    dept: {
+      name: 'Building Department',
+      address: '141 Oak Street, Taunton, MA 02780',
+      phone: '(508) 821-1015',
+      url: 'https://www.taunton-ma.gov/166/Building-Department',
+    },
+    portal: {
+      vendor: 'PermitEyes (online building permits)',
+      url: 'https://www.taunton-ma.gov/169/Online-Building-Permits',
+    },
+    facts: [
+      {
+        label: 'Building permit (residential)',
+        value:
+          '1% of the contract price plus a 4% surcharge (or $0.40 per sq ft for new construction) — $52 minimum',
+        sourceName: 'City of Taunton — Building Permit Fee Schedule (PDF)',
+        sourceUrl: 'https://www.taunton-ma.gov/170/Permit-Fees',
+        verifiedAt: V3,
+        effectiveDate: '2013-06-04',
+      },
+      {
+        label: 'Building permit (commercial)',
+        value:
+          '1.2% of the contract price plus a 4% surcharge (or $0.50 per sq ft for new construction) — $104 minimum',
+        sourceName: 'City of Taunton — Building Permit Fee Schedule (PDF)',
+        sourceUrl: 'https://www.taunton-ma.gov/170/Permit-Fees',
+        verifiedAt: V3,
+        effectiveDate: '2013-06-04',
+      },
+      {
+        label: 'Certificate of occupancy',
+        value: '$104 per unit; re-inspection $52',
+        sourceName: 'City of Taunton — Building Permit Fee Schedule (PDF)',
+        sourceUrl: 'https://www.taunton-ma.gov/170/Permit-Fees',
+        verifiedAt: V3,
+        effectiveDate: '2013-06-04',
+      },
+    ],
+    penalty: {
+      label: 'Working without a permit',
+      value: 'TRIPLE FEE for any work performed without a permit (building, plumbing, gas, or electrical)',
+      sourceName: 'City of Taunton — Building Permit Fee Schedule (PDF)',
+      sourceUrl: 'https://www.taunton-ma.gov/170/Permit-Fees',
+      verifiedAt: V3,
+      effectiveDate: '2013-06-04',
+    },
+  },
+  {
+    slug: 'chicopee-ma',
+    name: 'Chicopee',
+    county: 'Hampden',
+    map: { x: -1.88, y: -0.32 },
+    dept: {
+      name: 'Building Department',
+      address: '115 Baskin Drive, 2nd Floor, Chicopee, MA 01020',
+      phone: '(413) 594-1440',
+      url: 'https://www.chicopeema.gov/169/Building-Department',
+    },
+    portal: {
+      vendor: 'City online permits ($20 discount for filing online)',
+      url: 'https://www.chicopeema.gov/626/Online-Permits-and-Licenses',
+    },
+    facts: [
+      {
+        label: 'Building permit (new 1–2 family home)',
+        value: 'Flat fee by size: $320 up to 1,000 sq ft; $420 to 2,000 sq ft; $520 above 2,000 sq ft',
+        sourceName: 'City of Chicopee — Permit Fees',
+        sourceUrl: 'https://www.chicopeema.gov/172/Permit-Fees',
+        verifiedAt: V3,
+        effectiveDate: '2017-01-01',
+      },
+      {
+        label: 'Residential additions / alterations / repairs',
+        value: 'Tiered flat fee by project cost: $45 (under $1,000) up to $220 ($25,000 and over)',
+        sourceName: 'City of Chicopee — Permit Fees',
+        sourceUrl: 'https://www.chicopeema.gov/172/Permit-Fees',
+        verifiedAt: V3,
+        effectiveDate: '2017-01-01',
+      },
+      {
+        label: 'Commercial new construction',
+        value: '$20 plus $0.50 per sq ft per floor — $520 minimum; certificate of occupancy $55; re-inspection $30',
+        sourceName: 'City of Chicopee — Permit Fees',
+        sourceUrl: 'https://www.chicopeema.gov/172/Permit-Fees',
+        verifiedAt: V3,
+        effectiveDate: '2017-01-01',
+      },
+    ],
+  },
+  {
+    slug: 'weymouth-ma',
+    name: 'Weymouth',
+    county: 'Norfolk',
+    map: { x: 1.55, y: -0.12 },
+    dept: {
+      name: 'Department of Municipal Licenses and Inspections',
+      address: '75 Middle Street, Weymouth, MA 02189',
+      phone: '(781) 335-2000',
+      url: 'https://www.weymouth.ma.us/1644/Building-Permit-Information',
+    },
+    facts: [
+      {
+        label: 'Building permit (single-family)',
+        value: '$10 per $1,000 of construction value — $50 minimum',
+        sourceName: 'Town of Weymouth — Building Permit Information',
+        sourceUrl: 'https://www.weymouth.ma.us/1644/Building-Permit-Information',
+        verifiedAt: V3,
+        effectiveDate: '2024-07-01',
+      },
+      {
+        label: 'Building permit (all other buildings)',
+        value: '$20 per $1,000 of construction value — $100 minimum',
+        sourceName: 'Town of Weymouth — Building Permit Information',
+        sourceUrl: 'https://www.weymouth.ma.us/1644/Building-Permit-Information',
+        verifiedAt: V3,
+        effectiveDate: '2024-07-01',
+      },
+    ],
+  },
+  {
+    slug: 'methuen-ma',
+    name: 'Methuen',
+    county: 'Essex',
+    map: { x: 0.95, y: 0.72 },
+    dept: {
+      name: 'Inspections Division',
+      address: 'Searles Building, Suite 203, 41 Pleasant Street, Methuen, MA 01844',
+      phone: '(978) 983-8625',
+      url: 'https://www.cityofmethuen.net/263/Inspections-Division',
+    },
+    portal: { vendor: 'ViewPoint Cloud', url: 'https://methuenma.viewpointcloud.com/' },
+    facts: [
+      {
+        label: 'Building permit (new construction, additions, alterations, pools, demolition)',
+        value: '$13 per $1,000 of stated construction value — $50 minimum',
+        sourceName: 'City of Methuen — Inspections Division Fees (PDF)',
+        sourceUrl: 'https://www.cityofmethuen.net/340/Building-Permit-Fees-PDF',
+        verifiedAt: V3,
+        effectiveDate: '2022-08-01',
+      },
+      {
+        label: 'Certificate of occupancy',
+        value: '$50 per residential unit; $100 per commercial unit; re-inspection $50; paper filing adds $30',
+        sourceName: 'City of Methuen — Inspections Division Fees (PDF)',
+        sourceUrl: 'https://www.cityofmethuen.net/340/Building-Permit-Fees-PDF',
+        verifiedAt: V3,
+        effectiveDate: '2022-08-01',
+      },
+    ],
+    penalty: {
+      label: 'Working without a permit',
+      value: '300% of the building permit fee, plus $100 to release the stop-work order',
+      sourceName: 'City of Methuen — Inspections Division Fees (PDF)',
+      sourceUrl: 'https://www.cityofmethuen.net/340/Building-Permit-Fees-PDF',
+      verifiedAt: V3,
+      effectiveDate: '2022-08-01',
+    },
+  },
+  {
+    slug: 'gloucester-ma',
+    name: 'Gloucester',
+    county: 'Essex',
+    map: { x: 1.85, y: 0.42 },
+    dept: {
+      name: 'Inspectional Services — Building Inspector',
+      address: '3 Pond Road, Gloucester, MA 01930',
+      phone: '(978) 325-5210',
+      url: 'https://gloucester-ma.gov/231/Building-Inspector',
+    },
+    portal: {
+      vendor: 'ViewPoint Cloud (online submission required)',
+      url: 'https://gloucesterma.viewpointcloud.com/',
+    },
+    facts: [
+      {
+        label: 'Building permit',
+        value: '$50 application fee plus $10 per $1,000 of total construction cost — $60 minimum',
+        sourceName: 'City of Gloucester — Building Inspector',
+        sourceUrl: 'https://gloucester-ma.gov/231/Building-Inspector',
+        verifiedAt: V3,
+      },
+      {
+        label: 'Inspections',
+        value: 'By appointment only — inspection line staffed weekdays 8:30–9:30 AM',
+        sourceName: 'City of Gloucester — Building Inspector',
+        sourceUrl: 'https://gloucester-ma.gov/231/Building-Inspector',
+        verifiedAt: V3,
+      },
+    ],
+  },
+  {
+    slug: 'arlington-ma',
+    name: 'Arlington',
+    county: 'Middlesex',
+    map: { x: 1.2, y: 0.22 },
+    dept: {
+      name: 'Inspectional Services Department',
+      address: '51 Grove Street, 1st Floor, Arlington, MA 02476',
+      phone: '(781) 316-3390',
+      url: 'https://www.arlingtonma.gov/departments/inspectional-services',
+    },
+    portal: { vendor: 'OpenGov', url: 'https://arlingtonma.portal.opengov.com/' },
+    facts: [
+      {
+        label: 'Building permit (1–2 family, other buildings, demolition)',
+        value:
+          '$20 per $1,000 of estimated cost of work up to $15,000,000; $5 per $1,000 above that',
+        sourceName: 'Town of Arlington — Inspectional Services Fee Schedule (PDF)',
+        sourceUrl: 'https://www.arlingtonma.gov/home/showpublisheddocument/70540/638549080599670000',
+        verifiedAt: V3,
+      },
+      {
+        label: 'Electrical / plumbing / gas permits',
+        value: '$30 per $1,000 of estimated cost of work (each trade)',
+        sourceName: 'Town of Arlington — Inspectional Services Fee Schedule (PDF)',
+        sourceUrl: 'https://www.arlingtonma.gov/home/showpublisheddocument/70540/638549080599670000',
+        verifiedAt: V3,
+      },
+    ],
   },
 ]
 
