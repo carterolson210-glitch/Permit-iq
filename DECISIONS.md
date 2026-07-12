@@ -33,3 +33,23 @@ newest last. Flag anything here you want changed.
 7. **`subscription_status` mirrors Stripe verbatim** (`active`, `trialing`,
    `past_due`, `unpaid`, `canceled`) rather than inventing our own state
    machine — the source of truth stays in Stripe.
+
+## Phase 2 — Conversion paywall
+
+8. **Locked preview costs real AI tokens**, so it's tightly bounded: metadata
+   only (max_tokens 400), max 3 previews per user per day (tracked as
+   `preview` rows in `scan_events`, which also count toward the hourly rate
+   limit), and any failure degrades to the plain paywall. The preview never
+   contains fees/requirements — only counts, permit names, and a timeline
+   range.
+9. **Refund policy shown on the pricing FAQ is 7 days, no questions asked** —
+   invented as a reasonable default; change the copy if you want different
+   terms.
+10. **Exit-intent once-per-user is per-browser** (localStorage), desktop-only
+    via `pointer: fine` + width ≥768px. The checklist PDF is a real generated
+    asset at `/ma-permit-mistakes-checklist.pdf` built from the verified town
+    data (penalty multipliers etc.). Captured emails land in
+    `email_subscribers` with source `exit_intent_pricing`.
+11. **Landing keeps its own compact pricing cards** linking into checkout
+    directly; `/pricing` is the canonical comparison/FAQ page and the target
+    of paywall & banner links.

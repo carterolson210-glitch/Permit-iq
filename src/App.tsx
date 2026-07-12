@@ -16,6 +16,7 @@ import ResetPassword from './pages/ResetPassword'
 import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
 import TownPermitPage from './pages/TownPermitPage'
+import Pricing from './pages/Pricing'
 import ErrorBoundary from './components/ErrorBoundary'
 import GraceBanner from './components/GraceBanner'
 
@@ -89,6 +90,14 @@ function AnimatedRoutes() {
                 <Analyze />
               </PageTransition>
             </RequireAuth>
+          }
+        />
+        <Route
+          path="/pricing"
+          element={
+            <PageTransition>
+              <Pricing />
+            </PageTransition>
           }
         />
         <Route
