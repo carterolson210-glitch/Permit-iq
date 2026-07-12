@@ -94,6 +94,12 @@ export default function TownPermitPage() {
                 ✓ Hand-verified against official {name} sources —{' '}
                 {formatDate(profile.facts[0].verifiedAt)}
               </span>
+              <Link
+                to="/how-we-verify"
+                className="text-xs text-blue-700 underline hover:text-blue-800"
+              >
+                How we verify our data
+              </Link>
             </div>
 
             {/* department card */}

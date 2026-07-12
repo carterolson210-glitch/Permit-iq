@@ -10,6 +10,7 @@ import VarianceSection from '../components/townproof/VarianceSection'
 import PenaltySection from '../components/townproof/PenaltySection'
 import CompareSection from '../components/townproof/CompareSection'
 import { TOWN_PROFILES } from '../data/townPermits'
+import SocialProof from '../components/SocialProof'
 
 export default function Landing() {
   const navigate = useNavigate()
@@ -184,6 +185,9 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* SOCIAL PROOF (renders nothing until there are real numbers) */}
+      <SocialProof />
+
       {/* PRICING */}
       <section id="pricing">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-20">
@@ -285,6 +289,7 @@ export default function Landing() {
               <li><a href="#your-town" className="hover:text-blue-700">Your town</a></li>
               <li><a href="#how-it-works" className="hover:text-blue-700">How it works</a></li>
               <li><a href="#pricing" className="hover:text-blue-700">Pricing</a></li>
+              <li><Link to="/how-we-verify" className="hover:text-blue-700">How we verify</Link></li>
               <li><Link to="/privacy" className="hover:text-blue-700">Privacy</Link></li>
               <li><Link to="/terms" className="hover:text-blue-700">Terms</Link></li>
             </ul>

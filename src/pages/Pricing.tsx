@@ -6,6 +6,7 @@ import { startCheckout } from '../lib/stripe'
 import { annualSavingsLabel, PLAN_DEFS, type Billing, type PlanKey } from '../lib/plans'
 import { BillingToggle } from '../components/Paywall'
 import ExitIntentModal from '../components/ExitIntentModal'
+import SocialProof from '../components/SocialProof'
 
 type Cell = boolean | string
 
@@ -251,6 +252,9 @@ export default function Pricing() {
             </tbody>
           </table>
         </motion.div>
+
+        {/* Social proof (renders nothing until there are real numbers) */}
+        <SocialProof />
 
         {/* FAQ */}
         <motion.section variants={fadeUp} className="mx-auto mt-16 max-w-3xl">

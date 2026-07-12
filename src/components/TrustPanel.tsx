@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { Link } from 'react-router-dom'
 import type { PermitAnalysis } from '../lib/types'
 import { getTownByName } from '../data/townPermits'
 import { fadeUp } from '../lib/motionVariants'
@@ -102,6 +103,17 @@ export default function TrustPanel({
             ))}
           </ul>
         )}
+        <p className="mt-4 border-t border-line pt-3 text-xs text-slate-500">
+          Always confirm with the {town} building department — this report tells you exactly
+          what to ask them. Informational guidance, not legal advice.{' '}
+          <Link to="/how-we-verify" className="text-blue-700 hover:underline">
+            How we verify our data
+          </Link>{' '}
+          ·{' '}
+          <Link to="/terms" className="text-blue-700 hover:underline">
+            Terms
+          </Link>
+        </p>
       </div>
     </motion.div>
   )

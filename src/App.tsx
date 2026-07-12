@@ -17,6 +17,7 @@ import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
 import TownPermitPage from './pages/TownPermitPage'
 import Pricing from './pages/Pricing'
+import HowWeVerify from './pages/HowWeVerify'
 import ErrorBoundary from './components/ErrorBoundary'
 import GraceBanner from './components/GraceBanner'
 
@@ -97,6 +98,14 @@ function AnimatedRoutes() {
           element={
             <PageTransition>
               <Pricing />
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/how-we-verify"
+          element={
+            <PageTransition>
+              <HowWeVerify />
             </PageTransition>
           }
         />

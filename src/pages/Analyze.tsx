@@ -625,6 +625,30 @@ function Results({
                   {p.notes}
                 </div>
               )}
+
+              <div className="mt-4 border-t border-line pt-3 text-xs">
+                {p.source?.url ? (
+                  <span className="inline-flex items-center gap-1.5 text-slate-500">
+                    <svg viewBox="0 0 20 20" className="h-3.5 w-3.5 text-accent" fill="currentColor" aria-hidden="true">
+                      <path fillRule="evenodd" d="M16.704 5.29a1 1 0 010 1.42l-7.5 7.5a1 1 0 01-1.42 0l-3.5-3.5a1 1 0 011.42-1.42l2.79 2.79 6.79-6.79a1 1 0 011.42 0z" clipRule="evenodd" />
+                    </svg>
+                    Source:{' '}
+                    <a
+                      href={p.source.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="font-medium text-blue-700 hover:underline"
+                    >
+                      {p.source.title || p.source.url}
+                    </a>
+                  </span>
+                ) : (
+                  <span className="text-slate-400">
+                    Source: general Massachusetts guidance (780 CMR) — confirm specifics with the
+                    building department
+                  </span>
+                )}
+              </div>
             </motion.article>
           ))}
         </motion.div>

@@ -44,6 +44,8 @@ export interface Permit {
   typical_timeline: string
   required_documents: string[]
   notes: string
+  /** Official municipal source this permit's details came from (newer scans). */
+  source?: { title: string; url: string } | null
 }
 
 export interface ChecklistStep {

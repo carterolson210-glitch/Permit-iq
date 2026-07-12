@@ -352,6 +352,19 @@ revoke all on function public.refund_scan(uuid) from public, anon, authenticated
 revoke all on function public.finish_scan(uuid, text) from public, anon, authenticated;
 
 -- ─────────────────────────────────────────────────────────────
+-- Public aggregate stats (social proof). Exposes ONLY counts — never rows.
+-- The UI hides the counter below a threshold; numbers are always real.
+-- ─────────────────────────────────────────────────────────────
+create or replace function public.scan_stats()
+returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object(
+    'scans_completed', (select count(*) from public.scan_events where status = 'succeeded')
+  );
+$$;
+grant execute on function public.scan_stats() to anon, authenticated;
+
+-- ─────────────────────────────────────────────────────────────
 -- Storage bucket for permit documents
 -- ─────────────────────────────────────────────────────────────
 insert into storage.buckets (id, name, public)

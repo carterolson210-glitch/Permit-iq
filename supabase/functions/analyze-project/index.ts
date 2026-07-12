@@ -27,6 +27,7 @@ When given a project description and location (and optionally an uploaded permit
     typical_timeline: how long approval takes
     required_documents: array of documents needed
     notes: any important caveats
+    source: { title, url } for the official municipal or mass.gov page/document this permit's details are based on, or null — include only URLs you are highly confident are real; null is always better than an invented link
 - total_estimated_fees: { low: number, high: number }
 - total_estimated_timeline: overall timeline
 - checklist: ordered array of action items the applicant must complete, each with:
