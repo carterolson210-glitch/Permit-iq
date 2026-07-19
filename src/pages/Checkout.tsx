@@ -12,6 +12,7 @@ import {
   type PlanKey,
 } from '../lib/plans'
 import { BillingToggle } from '../components/Paywall'
+import { useAuth } from '../lib/auth'
 
 const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as
   | string
@@ -54,7 +55,7 @@ function PaymentSkeleton() {
   )
 }
 
-function SuccessPanel({ planName }: { planName: string }) {
+function SuccessPanel({ planName, active }: { planName: string; active: boolean }) {
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.96 }}
@@ -76,10 +77,21 @@ function SuccessPanel({ planName }: { planName: string }) {
       <h1 className="mt-6 text-2xl font-extrabold text-ink">
         Welcome to {planName} 🎉
       </h1>
-      <p className="mt-3 text-ink-muted">
-        Your subscription is active. A receipt is on its way to your inbox —
-        unlimited scans are unlocked right now.
-      </p>
+      {active ? (
+        <p className="mt-3 text-ink-muted">
+          Your subscription is active — unlimited scans are unlocked right now.
+          A receipt is on its way to your inbox.
+        </p>
+      ) : (
+        <p
+          className="mt-3 animate-pulse text-ink-muted"
+          role="status"
+          aria-live="polite"
+        >
+          Payment received — activating your subscription… this usually takes a
+          few seconds.
+        </p>
+      )}
       <Link to="/analyze" className="btn-primary mt-8 inline-block w-full">
         Start scanning
       </Link>
@@ -105,6 +117,7 @@ export default function Checkout() {
     [plan]
   )
 
+  const { isPaid, refreshProfile } = useAuth()
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [complete, setComplete] = useState(false)
@@ -140,6 +153,20 @@ export default function Checkout() {
 
   const onComplete = useCallback(() => setComplete(true), [])
 
+  // The Stripe webhook flips the account to paid a moment after payment.
+  // Poll the profile until it lands so the whole app (scan counter, paywall)
+  // reflects the new plan without a page reload.
+  useEffect(() => {
+    if (!complete || isPaid) return
+    void refreshProfile()
+    const timer = setInterval(() => void refreshProfile(), 1500)
+    const stop = setTimeout(() => clearInterval(timer), 30_000)
+    return () => {
+      clearInterval(timer)
+      clearTimeout(stop)
+    }
+  }, [complete, isPaid, refreshProfile])
+
   if (!plan || !planDef) return <Navigate to="/pricing" replace />
 
   const price = billing === 'annual' ? planDef.annual : planDef.monthly
@@ -168,7 +195,7 @@ export default function Checkout() {
 
       <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-14">
         {complete ? (
-          <SuccessPanel planName={planDef.name} />
+          <SuccessPanel planName={planDef.name} active={isPaid} />
         ) : (
           <motion.div variants={staggerChildren} initial="hidden" animate="show">
             <motion.button

@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { MA_TOWNS } from '../data/towns'
@@ -46,6 +46,13 @@ export default function Analyze() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const { profile, profileLoading, isPaid, scansRemaining, refreshProfile, signOut } = useAuth()
+
+  // Re-sync plan/scan state on arrival — it may have changed elsewhere
+  // (e.g. a just-completed checkout whose webhook landed moments ago).
+  useEffect(() => {
+    void refreshProfile()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const [step, setStep] = useState<'input' | 'scanning' | 'results'>('input')
   const [description, setDescription] = useState(searchParams.get('project') ?? '')
