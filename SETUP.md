@@ -10,8 +10,20 @@ missing is stubbed behind these env vars — the app degrades gracefully
 |---|---|
 | `VITE_SUPABASE_URL` | Supabase project URL (set) |
 | `VITE_SUPABASE_ANON_KEY` | Supabase publishable key (set) |
+| `VITE_STRIPE_PUBLISHABLE_KEY` | Stripe publishable key (`pk_test_...` for test mode) — mounts the embedded checkout form on `/checkout` (set in `.env.local`; also add to Vercel project env) |
 
-No Stripe values live in the frontend — plan→price mapping is server-side.
+No other Stripe values live in the frontend — plan→price mapping is server-side.
+
+## Embedded checkout (no off-site redirect)
+
+Payment happens on our own `/checkout` page: `stripe-checkout` creates an
+**embedded** Checkout Session (`ui_mode: embedded`, `redirect_on_completion:
+never`) and returns its `client_secret`; the page mounts it with
+`<EmbeddedCheckout />` and shows the success state in-app via `onComplete`.
+After changing the function, redeploy it:
+`supabase functions deploy stripe-checkout` (JWT verification stays ON).
+The client expects `{ clientSecret }` — an older deployed function that
+returns `{ url }` will make `/checkout` show "Checkout is not available".
 
 ## Supabase edge function secrets
 
