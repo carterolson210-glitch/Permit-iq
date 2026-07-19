@@ -3,13 +3,14 @@ import type { Billing, PlanKey } from './plans'
 
 export type { Billing, PlanKey }
 
-async function callBillingFunction(
+async function callBillingFunction<T>(
   name: 'stripe-checkout' | 'stripe-portal',
   body: Record<string, unknown>
-): Promise<{ url: string }> {
+): Promise<T> {
   const { data: session } = await supabase.auth.getSession()
   if (!session.session) {
-    window.location.href = `/login?next=${encodeURIComponent('/pricing')}`
+    const next = window.location.pathname + window.location.search
+    window.location.href = `/login?next=${encodeURIComponent(next)}`
     throw new Error('Please sign in first.')
   }
 
@@ -42,20 +43,36 @@ async function callBillingFunction(
     const payload = await resp.json().catch(() => ({}))
     throw new Error(payload?.error ?? 'Billing request failed. You have not been charged.')
   }
-  return (await resp.json()) as { url: string }
+  return (await resp.json()) as T
+}
+
+/** In-app route for the embedded checkout page. */
+export function checkoutPath(plan: PlanKey, billing: Billing): string {
+  return `/checkout?plan=${plan}&billing=${billing}`
 }
 
 /**
- * Start a Stripe hosted Checkout session. The server maps plan+billing to a
- * Stripe price ID from its own secrets — the client never chooses a price.
+ * Create an embedded Checkout Session and return its client secret. The server
+ * maps plan+billing to a Stripe price ID from its own secrets — the client
+ * never chooses a price. The secret is mounted by <EmbeddedCheckout /> on the
+ * /checkout page, so payment happens entirely on-site.
  */
-export async function startCheckout(plan: PlanKey, billing: Billing) {
-  const { url } = await callBillingFunction('stripe-checkout', { plan, billing })
-  window.location.href = url
+export async function fetchCheckoutClientSecret(
+  plan: PlanKey,
+  billing: Billing
+): Promise<string> {
+  const { clientSecret } = await callBillingFunction<{ clientSecret?: string }>(
+    'stripe-checkout',
+    { plan, billing }
+  )
+  if (!clientSecret) {
+    throw new Error('Checkout is not available right now. You have not been charged.')
+  }
+  return clientSecret
 }
 
 /** Open Stripe's hosted customer portal (self-manage billing/cancel/upgrade). */
 export async function openBillingPortal() {
-  const { url } = await callBillingFunction('stripe-portal', {})
+  const { url } = await callBillingFunction<{ url: string }>('stripe-portal', {})
   window.location.href = url
 }

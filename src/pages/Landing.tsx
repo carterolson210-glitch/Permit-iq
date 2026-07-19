@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { fadeUp, staggerChildren } from '../lib/motionVariants'
 import { useAuth } from '../lib/auth'
-import { startCheckout, type PlanKey, type Billing } from '../lib/stripe'
+import { checkoutPath, type PlanKey, type Billing } from '../lib/stripe'
 import Hero3D, { use3DHero } from '../components/home3d/Hero3D'
 import TownProofSection from '../components/townproof/TownProofSection'
 import VarianceSection from '../components/townproof/VarianceSection'
@@ -17,8 +17,6 @@ export default function Landing() {
   const { user } = useAuth()
   const show3D = use3DHero()
   const [projectText, setProjectText] = useState('')
-  const [checkoutLoading, setCheckoutLoading] = useState<PlanKey | null>(null)
-  const [checkoutError, setCheckoutError] = useState<string | null>(null)
 
   const handleSubmit = () => {
     const params = new URLSearchParams()
@@ -27,19 +25,10 @@ export default function Landing() {
     navigate(qs ? `/analyze?${qs}` : '/analyze')
   }
 
-  const handleCheckout = async (plan: PlanKey, billing: Billing) => {
-    setCheckoutError(null)
-    setCheckoutLoading(plan)
-    try {
-      await startCheckout(plan, billing)
-      // On success startCheckout redirects the browser to Stripe; on
-      // "not signed in" it redirects to /login. Either way we navigate
-      // away, so no need to clear checkoutLoading here.
-    } catch (e) {
-      setCheckoutError(e instanceof Error ? e.message : 'Could not start checkout.')
-      setCheckoutLoading(null)
-    }
-  }
+  // Payment happens on our own /checkout page (embedded Stripe form — no
+  // redirect off-site). Signed-out visitors pass through /login and land back.
+  const handleCheckout = (plan: PlanKey, billing: Billing) =>
+    navigate(checkoutPath(plan, billing))
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
@@ -194,11 +183,6 @@ export default function Landing() {
           <div className="text-center max-w-2xl mx-auto">
             <h2 className="text-3xl sm:text-4xl font-bold text-slate-900">Simple, transparent pricing</h2>
             <p className="mt-3 text-slate-600">Pick the plan that fits your project. Cancel anytime.</p>
-            {checkoutError && (
-              <p className="mt-4 text-sm text-red-600" role="alert">
-                {checkoutError}
-              </p>
-            )}
           </div>
 
           <div className="mt-12 grid gap-6 md:grid-cols-3">
@@ -244,10 +228,9 @@ export default function Landing() {
               </ul>
               <button
                 onClick={() => handleCheckout('pro', 'monthly')}
-                disabled={checkoutLoading !== null}
-                className="mt-8 inline-flex items-center justify-center rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow hover:bg-blue-800 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-8 inline-flex items-center justify-center rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow hover:bg-blue-800 transition"
               >
-                {checkoutLoading === 'pro' ? 'Redirecting…' : 'Get Pro'}
+                Get Pro
               </button>
             </div>
 
@@ -270,10 +253,9 @@ export default function Landing() {
               </ul>
               <button
                 onClick={() => handleCheckout('contractor', 'monthly')}
-                disabled={checkoutLoading !== null}
-                className="mt-8 inline-flex items-center justify-center rounded-md border border-blue-700 px-4 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                className="mt-8 inline-flex items-center justify-center rounded-md border border-blue-700 px-4 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition"
               >
-                {checkoutLoading === 'contractor' ? 'Redirecting…' : 'Get Contractor'}
+                Get Contractor
               </button>
             </div>
           </div>

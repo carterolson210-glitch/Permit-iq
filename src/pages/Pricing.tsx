@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { fadeUp, staggerChildren } from '../lib/motionVariants'
-import { startCheckout } from '../lib/stripe'
+import { checkoutPath } from '../lib/stripe'
 import { annualSavingsLabel, PLAN_DEFS, type Billing, type PlanKey } from '../lib/plans'
 import { BillingToggle } from '../components/Paywall'
 import ExitIntentModal from '../components/ExitIntentModal'
@@ -78,10 +78,9 @@ function CellValue({ v }: { v: Cell }) {
 }
 
 export default function Pricing() {
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const [billing, setBilling] = useState<Billing>('annual') // annual anchored ON
-  const [busyPlan, setBusyPlan] = useState<PlanKey | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [openFaq, setOpenFaq] = useState<number | null>(0)
   const cancelled = searchParams.get('checkout') === 'cancelled'
 
@@ -109,16 +108,9 @@ export default function Pricing() {
     }
   }, [])
 
-  const handleUpgrade = async (plan: PlanKey) => {
-    setError(null)
-    setBusyPlan(plan)
-    try {
-      await startCheckout(plan, billing)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not start checkout.')
-      setBusyPlan(null)
-    }
-  }
+  // Payment happens on our own /checkout page (embedded Stripe form — no
+  // redirect off-site).
+  const handleUpgrade = (plan: PlanKey) => navigate(checkoutPath(plan, billing))
 
   return (
     <div className="min-h-screen bg-bg text-ink">
@@ -161,16 +153,6 @@ export default function Pricing() {
             Checkout cancelled — you have not been charged. Your free scans are unaffected.
           </motion.p>
         )}
-        {error && (
-          <motion.p
-            variants={fadeUp}
-            role="alert"
-            className="mx-auto mt-6 max-w-md rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-center text-sm text-red-700"
-          >
-            {error}
-          </motion.p>
-        )}
-
         <motion.div variants={fadeUp} className="mt-10 flex justify-center">
           <BillingToggle billing={billing} onChange={setBilling} />
         </motion.div>
@@ -215,10 +197,9 @@ export default function Pricing() {
                 ) : (
                   <button
                     onClick={() => handleUpgrade(plan.key as PlanKey)}
-                    disabled={busyPlan !== null}
                     className={plan.highlight ? 'btn-primary mt-6 w-full' : 'btn-secondary mt-6 w-full border-primary text-primary hover:bg-blue-50'}
                   >
-                    {busyPlan === plan.key ? 'Redirecting…' : plan.cta}
+                    {plan.cta}
                   </button>
                 )}
               </div>

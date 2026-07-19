@@ -1,5 +1,7 @@
 // Supabase Edge Function: stripe-checkout
-// Creates a Stripe hosted Checkout Session for the signed-in user.
+// Creates an embedded Stripe Checkout Session for the signed-in user.
+// The client mounts the returned client_secret in an on-page payment form —
+// the user never leaves the site.
 //
 // Deploy: `supabase functions deploy stripe-checkout`
 //   (JWT verification stays ON — the caller must be signed in)
@@ -42,7 +44,6 @@ Deno.serve(async (req: Request) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
     const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-    const appUrl = Deno.env.get('APP_URL') ?? 'http://localhost:5173'
     if (!stripeKey || !supabaseUrl || !anonKey || !serviceKey) {
       return json({ error: 'Billing is not configured on the server yet.' }, 500, cors)
     }
@@ -91,8 +92,9 @@ Deno.serve(async (req: Request) => {
     } else if (user.email) {
       form.append('customer_email', user.email)
     }
-    form.append('success_url', `${appUrl}/analyze?checkout=success`)
-    form.append('cancel_url', `${appUrl}/pricing?checkout=cancelled`)
+    form.append('ui_mode', 'embedded')
+    // Completion is handled in-page via the onComplete callback — no redirect.
+    form.append('redirect_on_completion', 'never')
     form.append('client_reference_id', user.id)
     form.append('metadata[plan]', plan)
     form.append('metadata[billing]', billing)
@@ -114,7 +116,7 @@ Deno.serve(async (req: Request) => {
       return json({ error: 'Could not start checkout. You have not been charged.' }, 502, cors)
     }
     const session = await resp.json()
-    return json({ url: session.url, id: session.id }, 200, cors)
+    return json({ clientSecret: session.client_secret, id: session.id }, 200, cors)
   } catch (err) {
     console.error(err)
     return json({ error: 'Unexpected error. You have not been charged.' }, 500, cors)

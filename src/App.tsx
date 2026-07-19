@@ -17,6 +17,7 @@ import Privacy from './pages/Privacy'
 import Terms from './pages/Terms'
 import TownPermitPage from './pages/TownPermitPage'
 import Pricing from './pages/Pricing'
+import Checkout from './pages/Checkout'
 import HowWeVerify from './pages/HowWeVerify'
 import ErrorBoundary from './components/ErrorBoundary'
 import GraceBanner from './components/GraceBanner'
@@ -99,6 +100,16 @@ function AnimatedRoutes() {
             <PageTransition>
               <Pricing />
             </PageTransition>
+          }
+        />
+        <Route
+          path="/checkout"
+          element={
+            <RequireAuth>
+              <PageTransition>
+                <Checkout />
+              </PageTransition>
+            </RequireAuth>
           }
         />
         <Route

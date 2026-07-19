@@ -1,6 +1,7 @@
 import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { startCheckout } from '../lib/stripe'
+import { checkoutPath } from '../lib/stripe'
 import { PLAN_DEFS, annualSavingsLabel, type Billing, type PlanKey } from '../lib/plans'
 import { fadeUp, staggerChildren } from '../lib/motionVariants'
 import { FREE_SCAN_LIMIT } from '../lib/auth'
@@ -19,20 +20,12 @@ export default function Paywall({
   message?: string
   preview?: ScanPreview
 }) {
+  const navigate = useNavigate()
   const [billing, setBilling] = useState<Billing>('annual')
-  const [busyPlan, setBusyPlan] = useState<PlanKey | null>(null)
-  const [error, setError] = useState<string | null>(null)
 
-  const handleUpgrade = async (plan: PlanKey) => {
-    setError(null)
-    setBusyPlan(plan)
-    try {
-      await startCheckout(plan, billing)
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Could not start checkout. Please try again.')
-      setBusyPlan(null)
-    }
-  }
+  // Payment happens on our own /checkout page (embedded Stripe form — no
+  // redirect off-site).
+  const handleUpgrade = (plan: PlanKey) => navigate(checkoutPath(plan, billing))
 
   const paidPlans = PLAN_DEFS.filter((p) => p.key !== 'free')
 
@@ -109,16 +102,6 @@ export default function Paywall({
         </motion.div>
       )}
 
-      {error && (
-        <motion.p
-          variants={fadeUp}
-          role="alert"
-          className="mx-auto mt-6 max-w-md rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-center text-sm text-red-700"
-        >
-          {error}
-        </motion.p>
-      )}
-
       <motion.div variants={fadeUp} className="mt-8 flex items-center justify-center gap-3">
         <BillingToggle billing={billing} onChange={setBilling} />
       </motion.div>
@@ -168,14 +151,13 @@ export default function Paywall({
               <motion.button
                 whileTap={{ scale: 0.98 }}
                 onClick={() => handleUpgrade(plan.key as PlanKey)}
-                disabled={busyPlan !== null}
                 className={
                   plan.highlight
                     ? 'btn-primary mt-8 w-full'
                     : 'btn-secondary mt-8 w-full border-primary text-primary hover:bg-blue-50'
                 }
               >
-                {busyPlan === plan.key ? 'Redirecting…' : plan.cta}
+                {plan.cta}
               </motion.button>
             </motion.div>
           )
