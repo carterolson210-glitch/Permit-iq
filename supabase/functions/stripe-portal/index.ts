@@ -12,11 +12,14 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 function corsHeaders(req: Request): Record<string, string> {
   const appUrl = Deno.env.get('APP_URL')
   const origin = req.headers.get('origin') ?? ''
+  // Both Vercel projects deploy this app; any localhost port covers Vite's
+  // auto-increment when 5173 is taken.
   const allowed = new Set(
-    [appUrl, 'http://localhost:5173', 'http://localhost:4173'].filter(Boolean)
+    [appUrl, 'https://permit-iq-rho.vercel.app', 'https://permit-iq-1gzx.vercel.app'].filter(Boolean)
   )
+  const ok = allowed.has(origin) || /^http:\/\/localhost:\d+$/.test(origin)
   return {
-    'Access-Control-Allow-Origin': allowed.has(origin) ? origin : (appUrl ?? '*'),
+    'Access-Control-Allow-Origin': ok ? origin : (appUrl ?? '*'),
     'Access-Control-Allow-Headers':
       'authorization, x-client-info, apikey, content-type',
     'Access-Control-Allow-Methods': 'POST, OPTIONS',
