@@ -40,12 +40,18 @@ curl -X POST "https://api.supabase.com/v1/projects/epuxbohyvkjodflikeby/secrets"
 |---|---|---|
 | `APP_URL` | all functions (CORS + redirect URLs) | ✅ set (`https://permit-iq-rho.vercel.app`) |
 | `ANTHROPIC_API_KEY` | analyze-project | ⚠️ placeholder — scans fail gracefully until a real key from console.anthropic.com is set |
-| `STRIPE_SECRET_KEY` | stripe-checkout, stripe-portal | ❌ needed |
-| `STRIPE_WEBHOOK_SECRET` | stripe-webhook | ❌ needed (from the webhook endpoint you create below) |
-| `STRIPE_PRICE_PRO_MONTHLY` | checkout + webhook | ❌ needed |
-| `STRIPE_PRICE_PRO_ANNUAL` | checkout + webhook | ❌ needed |
-| `STRIPE_PRICE_CONTRACTOR_MONTHLY` | checkout + webhook | ❌ needed |
-| `STRIPE_PRICE_CONTRACTOR_ANNUAL` | checkout + webhook | ❌ needed |
+| `STRIPE_SECRET_KEY` | stripe-checkout, stripe-portal | ✅ set 2026-07-18 (**test mode** — swap for `sk_live_...` at launch) |
+| `STRIPE_WEBHOOK_SECRET` | stripe-webhook | ✅ set 2026-07-18 (endpoint `we_1TumQKJtN2Ze3hKSsQh5ujy7`, test mode) |
+| `STRIPE_PRICE_PRO_MONTHLY` | checkout + webhook | ✅ `price_1TumQ8JtN2Ze3hKSSbzGIMW5` ($29/mo, test) |
+| `STRIPE_PRICE_PRO_ANNUAL` | checkout + webhook | ✅ `price_1TumQ8JtN2Ze3hKSvdG68dW9` ($290/yr, test) |
+| `STRIPE_PRICE_CONTRACTOR_MONTHLY` | checkout + webhook | ✅ `price_1TumQ9JtN2Ze3hKSbB7oibVD` ($79/mo, test) |
+| `STRIPE_PRICE_CONTRACTOR_ANNUAL` | checkout + webhook | ✅ `price_1TumQ9JtN2Ze3hKSCsJnDSGb` ($790/yr, test) |
+
+Full test-mode flow verified 2026-07-18 on permit-iq-rho.vercel.app and
+permit-iq-1gzx.vercel.app: embedded form → 4242 card payment → in-page
+success → webhook set plan=pro/active → cancel → webhook downgraded to free.
+Going live = create live-mode products/prices + webhook endpoint, swap the
+sk/pk keys and the six secrets — no code changes.
 | `RESEND_API_KEY` | stripe-webhook, subscribe-email (transactional email) | ❌ optional — emails silently skipped without it |
 
 ## Stripe setup (one-time, ~10 minutes)

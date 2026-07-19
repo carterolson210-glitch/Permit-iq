@@ -5,3 +5,5 @@ dist/
 *.local
 .openclaw/
 .claude/settings.local.json
+.vercel
+.env*
