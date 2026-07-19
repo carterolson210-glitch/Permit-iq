@@ -3,12 +3,17 @@
 //
 // Deploy: `supabase functions deploy analyze-project`
 //   (JWT verification must stay ON — do NOT pass --no-verify-jwt)
-// Secrets: ANTHROPIC_API_KEY, APP_URL (for CORS), plus the standard
+// Secrets: OPENAI_API_KEY, APP_URL (for CORS), plus the standard
 //   SUPABASE_URL / SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY provided
 //   automatically by the platform.
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+
+// max_completion_tokens must leave headroom for gpt-5.x reasoning tokens,
+// which are billed/counted but not returned in the message content.
+const OPENAI_MODEL = 'gpt-5.5'
+const OPENAI_PREVIEW_MODEL = 'gpt-5.4-mini'
 
 const RATE_LIMIT_PER_HOUR = 10
 const MAX_DESCRIPTION_CHARS = 4000
@@ -78,7 +83,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405, cors)
 
-  const apiKey = Deno.env.get('ANTHROPIC_API_KEY')
+  const apiKey = Deno.env.get('OPENAI_API_KEY')
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -195,7 +200,7 @@ Deno.serve(async (req: Request) => {
   const eventId = reservation.event_id as string
   const scansRemaining = (reservation.remaining ?? null) as number | null
 
-  // ── Call Claude; refund the reserved scan on any failure ────
+  // ── Call OpenAI; refund the reserved scan on any failure ────
   try {
     const userText =
       `Project description: ${description}\n` +
@@ -209,36 +214,45 @@ Deno.serve(async (req: Request) => {
     const content: unknown[] = []
     if (pdfBase64) {
       content.push({
-        type: 'document',
-        source: { type: 'base64', media_type: 'application/pdf', data: pdfBase64 },
+        type: 'file',
+        file: {
+          filename: pdfName ?? 'document.pdf',
+          file_data: `data:application/pdf;base64,${pdfBase64}`,
+        },
       })
     }
     content.push({ type: 'text', text: userText })
 
-    const anthropicResponse = await fetch('https://api.anthropic.com/v1/messages', {
+    const openaiResponse = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 4096,
-        system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
-        messages: [{ role: 'user', content }],
+        model: OPENAI_MODEL,
+        max_completion_tokens: 16000,
+        response_format: { type: 'json_object' },
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content },
+        ],
       }),
     })
 
-    if (!anthropicResponse.ok) {
-      const text = await anthropicResponse.text()
-      console.error('Anthropic error:', anthropicResponse.status, text)
+    if (!openaiResponse.ok) {
+      const text = await openaiResponse.text()
+      console.error('OpenAI error:', openaiResponse.status, text)
       throw new Error('ai_error')
     }
 
-    const data = await anthropicResponse.json()
-    const textBlock = data?.content?.find((c: { type: string }) => c.type === 'text')
-    const parsed = parseAnalysis(textBlock?.text ?? '')
+    const data = await openaiResponse.json()
+    const choice = data?.choices?.[0]
+    if (choice?.finish_reason === 'length') {
+      console.error('OpenAI output truncated (finish_reason=length)')
+      throw new Error('ai_error')
+    }
+    const parsed = parseAnalysis(choice?.message?.content ?? '')
     if (!parsed) {
       console.error('Failed to parse model output')
       throw new Error('ai_error')
@@ -295,18 +309,18 @@ async function generateLockedPreview(
       category,
     })
 
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 400,
-        system: PREVIEW_SYSTEM_PROMPT,
+        model: OPENAI_PREVIEW_MODEL,
+        max_completion_tokens: 2000,
+        response_format: { type: 'json_object' },
         messages: [
+          { role: 'system', content: PREVIEW_SYSTEM_PROMPT },
           {
             role: 'user',
             content: `Project: ${description.slice(0, 800)}\nTown: ${town}, Massachusetts${category ? `\nCategory: ${category}` : ''}`,
@@ -316,7 +330,7 @@ async function generateLockedPreview(
     })
     if (!resp.ok) return null
     const data = await resp.json()
-    const text = data?.content?.find((c: { type: string }) => c.type === 'text')?.text ?? ''
+    const text = data?.choices?.[0]?.message?.content ?? ''
     const first = text.indexOf('{')
     const last = text.lastIndexOf('}')
     if (first === -1 || last === -1) return null

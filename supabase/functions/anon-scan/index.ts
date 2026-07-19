@@ -8,7 +8,7 @@
 //
 // Deploy: `supabase functions deploy anon-scan --no-verify-jwt`
 //   (create is unauthenticated by design; claim verifies the JWT manually)
-// Secrets: ANTHROPIC_API_KEY, APP_URL + platform-provided SUPABASE_*.
+// Secrets: OPENAI_API_KEY, APP_URL + platform-provided SUPABASE_*.
 //
 // Abuse bounds: no PDF uploads, 2 creates per IP per day, description
 // capped, stashed reports expire after 7 days.
@@ -19,6 +19,9 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 const MAX_DESCRIPTION_CHARS = 4000
 const CREATES_PER_IP_PER_DAY = 2
 const CLAIM_WINDOW_DAYS = 7
+
+// Keep in sync with analyze-project/index.ts.
+const OPENAI_MODEL = 'gpt-5.5'
 
 // Keep in sync with analyze-project/index.ts (minus document handling).
 const SYSTEM_PROMPT = `You are an expert Massachusetts building permit consultant with 20 years of experience helping contractors and homeowners navigate the Massachusetts building code (780 CMR), local zoning bylaws, and municipal permit processes across all 351 MA cities and towns.
@@ -103,7 +106,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405, cors)
 
-  const apiKey = Deno.env.get('ANTHROPIC_API_KEY')
+  const apiKey = Deno.env.get('OPENAI_API_KEY')
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -219,18 +222,18 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
+        Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
-        max_tokens: 4096,
-        system: [{ type: 'text', text: SYSTEM_PROMPT, cache_control: { type: 'ephemeral' } }],
+        model: OPENAI_MODEL,
+        max_completion_tokens: 16000,
+        response_format: { type: 'json_object' },
         messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
           {
             role: 'user',
             content:
@@ -242,12 +245,13 @@ Deno.serve(async (req: Request) => {
       }),
     })
     if (!resp.ok) {
-      console.error('Anthropic error:', resp.status, await resp.text())
+      console.error('OpenAI error:', resp.status, await resp.text())
       throw new Error('ai_error')
     }
     const data = await resp.json()
-    const textBlock = data?.content?.find((c: { type: string }) => c.type === 'text')
-    const parsed = parseAnalysis(textBlock?.text ?? '')
+    const choice = data?.choices?.[0]
+    if (choice?.finish_reason === 'length') throw new Error('ai_error')
+    const parsed = parseAnalysis(choice?.message?.content ?? '')
     if (!parsed) throw new Error('ai_error')
 
     const { data: inserted, error: insertError } = await admin

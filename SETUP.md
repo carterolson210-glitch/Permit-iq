@@ -39,7 +39,8 @@ curl -X POST "https://api.supabase.com/v1/projects/epuxbohyvkjodflikeby/secrets"
 | Secret | Used by | Status |
 |---|---|---|
 | `APP_URL` | all functions (CORS + redirect URLs) | ✅ set (`https://permit-iq-rho.vercel.app`) |
-| `ANTHROPIC_API_KEY` | analyze-project | ⚠️ placeholder — scans fail gracefully until a real key from console.anthropic.com is set |
+| `OPENAI_API_KEY` | analyze-project, anon-scan (all AI scans; model `gpt-5.5`, preview `gpt-5.4-mini`) | ⚠️ key set 2026-07-19 and valid, but the OpenAI account has **no billing credits** (`insufficient_quota`) — scans fail gracefully (free scan auto-refunded) until billing is added at platform.openai.com |
+| `ANTHROPIC_API_KEY` | (unused since the 2026-07-19 OpenAI port) | leftover placeholder, safe to delete |
 | `STRIPE_SECRET_KEY` | stripe-checkout, stripe-portal | ✅ set 2026-07-18 (**test mode** — swap for `sk_live_...` at launch) |
 | `STRIPE_WEBHOOK_SECRET` | stripe-webhook | ✅ set 2026-07-18 (endpoint `we_1TumQKJtN2Ze3hKSsQh5ujy7`, test mode) |
 | `STRIPE_PRICE_PRO_MONTHLY` | checkout + webhook | ✅ `price_1TumQ8JtN2Ze3hKSSbzGIMW5` ($29/mo, test) |
