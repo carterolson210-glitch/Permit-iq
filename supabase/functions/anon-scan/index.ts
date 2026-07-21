@@ -8,7 +8,7 @@
 //
 // Deploy: `supabase functions deploy anon-scan --no-verify-jwt`
 //   (create is unauthenticated by design; claim verifies the JWT manually)
-// Secrets: OPENAI_API_KEY, APP_URL + platform-provided SUPABASE_*.
+// Secrets: XAI_API_KEY, APP_URL + platform-provided SUPABASE_*.
 //
 // Abuse bounds: no PDF uploads, 2 creates per IP per day, description
 // capped, stashed reports expire after 7 days.
@@ -21,7 +21,7 @@ const CREATES_PER_IP_PER_DAY = 2
 const CLAIM_WINDOW_DAYS = 7
 
 // Keep in sync with analyze-project/index.ts.
-const OPENAI_MODEL = 'gpt-5.5'
+const XAI_MODEL = 'grok-4.5'
 
 // Keep in sync with analyze-project/index.ts (minus document handling).
 const SYSTEM_PROMPT = `You are an expert Massachusetts building permit consultant with 20 years of experience helping contractors and homeowners navigate the Massachusetts building code (780 CMR), local zoning bylaws, and municipal permit processes across all 351 MA cities and towns.
@@ -106,7 +106,7 @@ Deno.serve(async (req: Request) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors })
   if (req.method !== 'POST') return json({ error: 'Method not allowed' }, 405, cors)
 
-  const apiKey = Deno.env.get('OPENAI_API_KEY')
+  const apiKey = Deno.env.get('XAI_API_KEY')
   const supabaseUrl = Deno.env.get('SUPABASE_URL')
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY')
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
@@ -222,14 +222,14 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
+    const resp = await fetch('https://api.x.ai/v1/chat/completions', {
       method: 'POST',
       headers: {
         'content-type': 'application/json',
         Authorization: `Bearer ${apiKey}`,
       },
       body: JSON.stringify({
-        model: OPENAI_MODEL,
+        model: XAI_MODEL,
         max_completion_tokens: 16000,
         response_format: { type: 'json_object' },
         messages: [
@@ -245,7 +245,7 @@ Deno.serve(async (req: Request) => {
       }),
     })
     if (!resp.ok) {
-      console.error('OpenAI error:', resp.status, await resp.text())
+      console.error('xAI error:', resp.status, await resp.text())
       throw new Error('ai_error')
     }
     const data = await resp.json()

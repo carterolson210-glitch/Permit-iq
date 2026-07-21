@@ -39,8 +39,16 @@ curl -X POST "https://api.supabase.com/v1/projects/epuxbohyvkjodflikeby/secrets"
 | Secret | Used by | Status |
 |---|---|---|
 | `APP_URL` | all functions (CORS + redirect URLs) | ✅ set (`https://permit-iq-rho.vercel.app`) |
-| `OPENAI_API_KEY` | analyze-project, anon-scan (all AI scans; model `gpt-5.5`, preview `gpt-5.4-mini`) | ⚠️ key set 2026-07-19 and valid, but the OpenAI account has **no billing credits** (`insufficient_quota`) — scans fail gracefully (free scan auto-refunded) until billing is added at platform.openai.com |
-| `ANTHROPIC_API_KEY` | (unused since the 2026-07-19 OpenAI port) | leftover placeholder, safe to delete |
+| `XAI_API_KEY` | analyze-project, anon-scan (all AI scans; model `grok-4.5` for both full analysis and the paywall preview) | ⚠️ key set 2026-07-20 and valid, but the xAI team has **no billing credits** (`permission-denied`) — scans fail gracefully (free scan auto-refunded) until credits are purchased at console.x.ai |
+| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | (unused since the 2026-07-20 Grok port) | leftover placeholders, safe to delete |
+
+**Grok limitation:** its chat completions API accepts images but not PDF
+content parts. An uploaded PDF is still validated and its filename is passed
+to the model as context, but the document's actual contents are not — the
+system prompt tells the model not to claim otherwise. If document analysis
+(reading an uploaded plot plan / prior permit / contractor quote) needs to
+come back, either switch that one call back to OpenAI/Anthropic or add
+server-side PDF text extraction before calling Grok.
 | `STRIPE_SECRET_KEY` | stripe-checkout, stripe-portal | ✅ set 2026-07-18 (**test mode** — swap for `sk_live_...` at launch) |
 | `STRIPE_WEBHOOK_SECRET` | stripe-webhook | ✅ set 2026-07-18 (endpoint `we_1TumQKJtN2Ze3hKSsQh5ujy7`, test mode) |
 | `STRIPE_PRICE_PRO_MONTHLY` | checkout + webhook | ✅ `price_1TumQ8JtN2Ze3hKSSbzGIMW5` ($29/mo, test) |
