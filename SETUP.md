@@ -39,16 +39,20 @@ curl -X POST "https://api.supabase.com/v1/projects/epuxbohyvkjodflikeby/secrets"
 | Secret | Used by | Status |
 |---|---|---|
 | `APP_URL` | all functions (CORS + redirect URLs) | ✅ set (`https://permit-iq-rho.vercel.app`) |
-| `XAI_API_KEY` | analyze-project, anon-scan (all AI scans; model `grok-4.5` for both full analysis and the paywall preview) | ⚠️ key set 2026-07-20 and valid, but the xAI team has **no billing credits** (`permission-denied`) — scans fail gracefully (free scan auto-refunded) until credits are purchased at console.x.ai |
-| `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` | (unused since the 2026-07-20 Grok port) | leftover placeholders, safe to delete |
+| `OPENAI_API_KEY` | analyze-project, anon-scan (all AI scans; model `gpt-5.5`, preview `gpt-5.4-mini`) | ✅ **live and funded 2026-07-24** — full scan, anon-scan, claim, and locked-preview paths all verified end-to-end with real output |
+| `XAI_API_KEY` / `ANTHROPIC_API_KEY` | (unused since the 2026-07-24 switch back to OpenAI) | leftover placeholders, safe to delete |
 
-**Grok limitation:** its chat completions API accepts images but not PDF
-content parts. An uploaded PDF is still validated and its filename is passed
-to the model as context, but the document's actual contents are not — the
-system prompt tells the model not to claim otherwise. If document analysis
-(reading an uploaded plot plan / prior permit / contractor quote) needs to
-come back, either switch that one call back to OpenAI/Anthropic or add
-server-side PDF text extraction before calling Grok.
+2026-07-24: while testing, found `public.anon_scans` (and the
+`client_events_insert` policy) had never actually been applied to the live
+database, even though both were in `schema.sql` — the anon-scan zero-friction
+flow had likely never worked in production. Fixed the one non-idempotent
+statement in schema.sql (missing `drop policy if exists` before
+`client_events_insert`) and re-ran the full file via the Supabase Management
+API's `/database/query` endpoint, then `NOTIFY pgrst, 'reload schema'` to
+bust PostgREST's cache. **schema.sql is written to be fully idempotent
+(`create ... if not exists` / `drop policy if exists` + `create policy`) —
+if you add new tables/policies, keep that pattern and re-run the whole file
+after any edit; it's always safe to do so.**
 | `STRIPE_SECRET_KEY` | stripe-checkout, stripe-portal | ✅ set 2026-07-18 (**test mode** — swap for `sk_live_...` at launch) |
 | `STRIPE_WEBHOOK_SECRET` | stripe-webhook | ✅ set 2026-07-18 (endpoint `we_1TumQKJtN2Ze3hKSsQh5ujy7`, test mode) |
 | `STRIPE_PRICE_PRO_MONTHLY` | checkout + webhook | ✅ `price_1TumQ8JtN2Ze3hKSSbzGIMW5` ($29/mo, test) |

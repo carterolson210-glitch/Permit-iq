@@ -428,6 +428,7 @@ create table if not exists public.client_events (
   ua text check (char_length(ua) <= 300)
 );
 alter table public.client_events enable row level security;
+drop policy if exists client_events_insert on public.client_events;
 create policy client_events_insert on public.client_events
   for insert to anon, authenticated with check (true);
 create index if not exists client_events_created_idx on public.client_events (created_at desc);
