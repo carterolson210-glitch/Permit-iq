@@ -1,75 +1,62 @@
-import { useRef } from 'react'
-import { useFrame, useThree } from '@react-three/fiber'
+import { useThree } from '@react-three/fiber'
+import { Environment, Lightformer, ContactShadows } from '@react-three/drei'
 import * as THREE from 'three'
-import { scrollState, seg, SCENES } from './scroll'
+import CameraPath from './CameraPath'
 import DocumentScene from './DocumentScene'
 import MassMap from './MassMap'
+import ZoningOverlay from './ZoningOverlay'
 import BlueprintBackdrop from './BlueprintBackdrop'
+import Effects from './Effects'
 
 const BG = '#f8fafc' // matches page bg (slate-50) so the canvas blends in
 
-// Damps raw ScrollTrigger progress into scrollState.smooth and drives the
-// camera like a dolly/crane move rather than a page scroll.
-function CameraRig() {
-  const pos = useRef(new THREE.Vector3())
-  const look = useRef(new THREE.Vector3())
-
-  useFrame(({ camera }, delta) => {
-    scrollState.smooth = THREE.MathUtils.damp(
-      scrollState.smooth,
-      scrollState.progress,
-      8,
-      delta
-    )
-    const p = scrollState.smooth
-
-    // S1 — push in from a high three-quarter angle to face-on
-    const a = seg(p, SCENES.s1.a, SCENES.s1.b)
-    // S2 — ease back out to give the exploding fields room
-    const b = seg(p, SCENES.s2.a, SCENES.s2.b)
-    // S3 — crane up and over, tilting down toward the map
-    const c = seg(p, SCENES.s3.a, SCENES.s3.a + 0.16)
-    // S4 — slow push toward the map as the dashboard takes over
-    const d = seg(p, SCENES.s4.a, SCENES.s4.b)
-
-    pos.current.set(
-      Math.sin(a * Math.PI) * 1.1 - Math.sin(b * Math.PI) * 0.7,
-      THREE.MathUtils.lerp(0.55, 0.05, a),
-      THREE.MathUtils.lerp(9.2, 6.4, a) + b * 1.0
-    )
-    look.current.set(0, THREE.MathUtils.lerp(0.1, 0, a), 0)
-
-    if (c > 0) {
-      pos.current.set(
-        pos.current.x * (1 - c),
-        THREE.MathUtils.lerp(pos.current.y, 4.6, c) + d * 0.9,
-        THREE.MathUtils.lerp(pos.current.z, 4.4, c) - d * 1.2
-      )
-      look.current.set(0, THREE.MathUtils.lerp(0, -1.55, c), -0.5 * c)
-    }
-
-    camera.position.copy(pos.current)
-    camera.lookAt(look.current)
-  })
-  return null
-}
-
 export default function HeroScene() {
-  const { scene } = useThree()
+  const { scene, gl } = useThree()
+
+  // ACESFilmic + a touch of exposure for physically-based highlights on the
+  // light page. (R3F defaults to ACESFilmic; we set exposure explicitly.)
+  gl.toneMapping = THREE.ACESFilmicToneMapping
+  gl.toneMappingExposure = 1.05
+
   if (!scene.fog) {
-    scene.fog = new THREE.Fog(BG, 8, 18)
+    scene.fog = new THREE.Fog(BG, 9, 20)
     scene.background = new THREE.Color(BG)
   }
 
   return (
     <>
-      <CameraRig />
-      <ambientLight intensity={0.85} />
-      <directionalLight position={[4, 6, 5]} intensity={1.1} />
-      <directionalLight position={[-6, -2, 4]} intensity={0.25} color="#bfdbfe" />
+      <CameraPath />
+
+      {/* Studio lighting from an in-scene environment — Lightformers generate
+          the env map at runtime with zero external fetch, so it works under the
+          site's strict CSP (no HDRI CDN). One keyed directional adds shadow
+          definition; a low fill lifts the shadows on the light page. */}
+      <Environment resolution={256} frames={1}>
+        <Lightformer form="rect" intensity={2.2} position={[3, 4, 5]} scale={[6, 6, 1]} color="#ffffff" />
+        <Lightformer form="rect" intensity={1.1} position={[-5, 2, 3]} scale={[5, 5, 1]} color="#dbeafe" />
+        <Lightformer form="circle" intensity={1.4} position={[0, -3, 4]} scale={[4, 4, 1]} color="#eff6ff" />
+      </Environment>
+
+      <directionalLight position={[4, 7, 5]} intensity={1.35} color="#ffffff" />
+      <ambientLight intensity={0.35} />
+
+      {/* Soft contact shadow grounding the hero document. */}
+      <ContactShadows
+        position={[0, -1.85, 0]}
+        opacity={0.32}
+        scale={12}
+        blur={2.6}
+        far={4}
+        resolution={512}
+        color="#1e293b"
+      />
+
       <DocumentScene />
       <MassMap />
+      <ZoningOverlay />
       <BlueprintBackdrop />
+
+      <Effects />
     </>
   )
 }
