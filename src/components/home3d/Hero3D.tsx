@@ -1,4 +1,5 @@
 import { lazy, Suspense, useMemo } from 'react'
+import { SCENE_BEATS } from '../../data/demoReport'
 
 const Hero3DSection = lazy(() => import('./Hero3DSection'))
 
@@ -20,20 +21,25 @@ export function use3DHero(): boolean {
   }, [])
 }
 
-// Lightweight placeholder shown while the three.js chunk streams in — the
-// headline is real content, so first paint isn't blocked or blank.
+// Placeholder shown while the three.js chunk streams in. The real <h1> and
+// CTA already live in the hero above this section, so this is just a quiet,
+// correctly-sized stand-in for the pinned explainer — no stale headline, no
+// layout jump when the canvas takes over. It shows the first beat's copy so
+// the section reads as intentional even before WebGL paints.
 function HeroLoading() {
   return (
     <div className="flex h-screen items-center justify-center bg-slate-50">
-      <div className="max-w-3xl px-6 text-center">
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900">
-          Get your Massachusetts building permit{' '}
-          <span className="text-blue-700">right the first time</span>
-        </h1>
-        <p className="mt-5 text-lg sm:text-xl text-slate-600">
-          Describe your project in plain English. PermitIQ maps it to every
-          permit your town requires.
-        </p>
+      <div className="max-w-xl px-6 text-center">
+        <div className="text-xs font-semibold uppercase tracking-widest text-blue-700">
+          {SCENE_BEATS[0].headline.replace(/\.$/, '')}
+        </div>
+        <div
+          className="mx-auto mt-6 h-1 w-24 overflow-hidden rounded-full bg-slate-200"
+          role="status"
+          aria-label="Loading the interactive walkthrough"
+        >
+          <div className="h-full w-1/2 animate-pulse rounded-full bg-blue-600" />
+        </div>
       </div>
     </div>
   )

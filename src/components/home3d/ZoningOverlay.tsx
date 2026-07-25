@@ -65,18 +65,18 @@ export default function ZoningOverlay() {
             <MeshTransmissionMaterial
               transmission={1}
               thickness={0.35}
-              roughness={0.08}
+              roughness={0.1}
               ior={1.3}
-              chromaticAberration={0.04}
+              chromaticAberration={0.03}
               anisotropy={0.1}
-              distortion={0.1}
+              distortion={0.08}
               distortionScale={0.2}
-              temporalDistortion={0.1}
+              temporalDistortion={0.08}
               color={layer.tint}
               background={new THREE.Color('#eef4ff')}
               transparent
-              samples={6}
-              resolution={256}
+              samples={4}
+              resolution={128}
             />
           </RoundedBox>
           {/* thin bright edge so the plane reads as a discrete overlay */}

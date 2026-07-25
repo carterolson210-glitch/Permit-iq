@@ -6,7 +6,6 @@ import DocumentScene from './DocumentScene'
 import MassMap from './MassMap'
 import ZoningOverlay from './ZoningOverlay'
 import BlueprintBackdrop from './BlueprintBackdrop'
-import Effects from './Effects'
 
 const BG = '#f8fafc' // matches page bg (slate-50) so the canvas blends in
 
@@ -55,8 +54,6 @@ export default function HeroScene() {
       <MassMap />
       <ZoningOverlay />
       <BlueprintBackdrop />
-
-      <Effects />
     </>
   )
 }
