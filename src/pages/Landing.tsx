@@ -5,11 +5,14 @@ import { fadeUp, staggerChildren } from '../lib/motionVariants'
 import { useAuth } from '../lib/auth'
 import { checkoutPath, type PlanKey, type Billing } from '../lib/stripe'
 import Hero3D, { use3DHero } from '../components/home3d/Hero3D'
+import SceneNarrative2D from '../components/home/SceneNarrative2D'
+import { WhatYouGet, WhoItsFor, HomeFAQ } from '../components/home/HomeSections'
 import TownProofSection from '../components/townproof/TownProofSection'
 import VarianceSection from '../components/townproof/VarianceSection'
 import PenaltySection from '../components/townproof/PenaltySection'
 import CompareSection from '../components/townproof/CompareSection'
-import { TOWN_PROFILES } from '../data/townPermits'
+import { TOWN_PROFILES, VERIFIED_TOWN_COUNT } from '../data/townPermits'
+import { DEMO_TOWN_SLUG } from '../data/demoReport'
 import SocialProof from '../components/SocialProof'
 
 export default function Landing() {
@@ -56,35 +59,31 @@ export default function Landing() {
         </nav>
       </header>
 
-      {/* 3D SCROLL HERO (desktop + WebGL + motion-ok; otherwise 2D hero below) */}
-      {show3D && <Hero3D />}
-
-      {/* HERO */}
+      {/* HERO — real crawlable <h1>, subhead, primary CTA (the project input),
+          trust line, and a sample-report path. Visible above the fold for
+          everyone, regardless of the 3D. */}
       <section id="top">
         <motion.div
           variants={staggerChildren}
           initial="hidden"
           animate="show"
-          className="mx-auto max-w-4xl px-4 sm:px-6 pt-16 pb-20 sm:pt-24 sm:pb-28 text-center"
+          className="mx-auto max-w-4xl px-4 sm:px-6 pt-16 pb-16 sm:pt-24 sm:pb-20 text-center"
         >
-          {!show3D && (
-            <>
-              <motion.h1
-                variants={fadeUp}
-                className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900"
-              >
-                Get your Massachusetts building permit{' '}
-                <span className="text-blue-700">right the first time</span>
-              </motion.h1>
-              <motion.p
-                variants={fadeUp}
-                className="mt-6 text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto"
-              >
-                Describe your project in plain English. PermitIQ tells you exactly what
-                permits you need, what to submit, and what it costs — specific to your town.
-              </motion.p>
-            </>
-          )}
+          <motion.h1
+            variants={fadeUp}
+            className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900"
+          >
+            Find every permit your Massachusetts project needs —{' '}
+            <span className="text-blue-700">town by town</span>
+          </motion.h1>
+          <motion.p
+            variants={fadeUp}
+            className="mt-6 text-lg sm:text-xl text-slate-600 max-w-2xl mx-auto"
+          >
+            Describe your project and get the exact permits, forms, fees, and review steps
+            for your town — every requirement linked to the town’s own source, not generic
+            state advice.
+          </motion.p>
 
           <motion.div variants={fadeUp} className="mt-10 mx-auto max-w-2xl text-left">
             <label htmlFor="project" className="block text-sm font-medium text-slate-700 mb-2">
@@ -95,7 +94,7 @@ export default function Landing() {
               value={projectText}
               onChange={(e) => setProjectText(e.target.value)}
               rows={4}
-              placeholder="e.g. I want to build a 400 sq ft deck attached to my house in Marblehead MA"
+              placeholder="e.g. I want to build a 400 sq ft deck attached to my house in Worcester MA"
               className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-base shadow-sm placeholder:text-slate-400 focus:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-700/30 resize-none"
             />
             <motion.button
@@ -103,17 +102,36 @@ export default function Landing() {
               onClick={handleSubmit}
               className="mt-6 w-full inline-flex items-center justify-center rounded-lg bg-blue-700 px-6 py-3.5 text-base font-semibold text-white shadow hover:bg-blue-800 transition"
             >
-              Get My Permit Checklist
+              Get my permit checklist — free
             </motion.button>
-            <p className="mt-4 text-center text-sm text-slate-500">
+            <div className="mt-4 flex flex-col items-center gap-2 text-center text-sm text-slate-500 sm:flex-row sm:justify-center sm:gap-4">
               <span className="inline-flex items-center gap-2">
                 <span className="h-2 w-2 rounded-full bg-green-600" />
-                3 free scans with a new account — no credit card required
+                3 free scans — no credit card required
               </span>
+              <span className="hidden sm:inline text-slate-300">·</span>
+              <Link to={`/permits/${DEMO_TOWN_SLUG}`} className="font-medium text-blue-700 hover:underline">
+                See a sample report →
+              </Link>
+            </div>
+            <p className="mt-4 text-center text-xs text-slate-500">
+              {VERIFIED_TOWN_COUNT} Massachusetts towns hand-verified against their own fee
+              schedules · all 351 covered with cited research
             </p>
           </motion.div>
         </motion.div>
       </section>
+
+      {/* HOW IT WORKS — the 3D scroll explainer (desktop + WebGL + motion-ok),
+          or the identical 2D narrative everywhere else. Same four beats, same
+          sourced report card. */}
+      {show3D ? <Hero3D /> : <SceneNarrative2D />}
+
+      {/* WHAT'S IN A REPORT */}
+      <WhatYouGet />
+
+      {/* WHO IT'S FOR */}
+      <WhoItsFor />
 
       {/* TOWN-BY-TOWN PROOF */}
       <TownProofSection />
@@ -126,53 +144,6 @@ export default function Landing() {
 
       {/* REJECTIONS + PENALTIES */}
       <PenaltySection />
-
-      {/* HOW IT WORKS */}
-      <section id="how-it-works" className="bg-slate-50">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-20">
-          <div className="text-center max-w-2xl mx-auto">
-            <h2 className="text-3xl sm:text-4xl font-bold text-slate-900">How it works</h2>
-            <p className="mt-3 text-slate-600">
-              From plain-English description to a complete, town-specific permit packet in seconds.
-            </p>
-          </div>
-
-          <ol className="mt-12 grid gap-8 md:grid-cols-3">
-            {[
-              {
-                n: 1,
-                title: 'Describe your project',
-                body: 'Tell PermitIQ what you want to build, in plain English. No forms, no jargon.',
-              },
-              {
-                n: 2,
-                title: 'AI identifies every permit',
-                body: 'Our AI maps your project to every permit required by your specific Massachusetts town.',
-              },
-              {
-                n: 3,
-                title: 'Get your complete checklist',
-                body: 'Receive the full list of forms, documents, fees, and contacts — ready to submit.',
-              },
-            ].map((step, i) => (
-              <motion.li
-                key={step.n}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-60px' }}
-                transition={{ duration: 0.4, delay: i * 0.1 }}
-                className="relative rounded-xl border border-slate-200 bg-slate-50 p-6 shadow-sm"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-700 text-white font-bold">
-                  {step.n}
-                </div>
-                <h3 className="mt-4 text-lg font-semibold text-slate-900">{step.title}</h3>
-                <p className="mt-2 text-slate-600">{step.body}</p>
-              </motion.li>
-            ))}
-          </ol>
-        </div>
-      </section>
 
       {/* SOCIAL PROOF (renders nothing until there are real numbers) */}
       <SocialProof />
@@ -262,15 +233,18 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* FAQ */}
+      <HomeFAQ />
+
       {/* FOOTER */}
       <footer className="bg-white border-t border-slate-200">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-12">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
             <div className="text-xl font-bold text-blue-700">PermitIQ</div>
             <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
-              <li><a href="#your-town" className="hover:text-blue-700">Your town</a></li>
-              <li><a href="#how-it-works" className="hover:text-blue-700">How it works</a></li>
+              <li><a href="#what-you-get" className="hover:text-blue-700">What you get</a></li>
               <li><a href="#pricing" className="hover:text-blue-700">Pricing</a></li>
+              <li><a href="#faq" className="hover:text-blue-700">FAQ</a></li>
               <li><Link to="/how-we-verify" className="hover:text-blue-700">How we verify</Link></li>
               <li><Link to="/privacy" className="hover:text-blue-700">Privacy</Link></li>
               <li><Link to="/terms" className="hover:text-blue-700">Terms</Link></li>

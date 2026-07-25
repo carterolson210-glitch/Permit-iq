@@ -6,6 +6,9 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import HeroScene from './HeroScene'
 import { scrollState } from './scroll'
+import { SCENE_BEATS } from '../../data/demoReport'
+import DemoReportCard from '../home/DemoReportCard'
+import SceneCaption from '../home/SceneCaption'
 
 gsap.registerPlugin(ScrollTrigger)
 
@@ -97,27 +100,13 @@ export default function Hero3DSection() {
         className="pointer-events-none absolute inset-0 bg-gradient-to-b from-slate-50/60 via-slate-50/85 to-slate-50 opacity-0"
       />
 
-      {/* 2D overlay — Framer Motion handles entrances, GSAP handles scroll-out */}
+      {/* 2D overlay — Framer Motion handles entrances, GSAP handles scroll-out.
+          The real page <h1> and the primary CTA live in the Landing hero above
+          this pinned explainer; here we teach the four beats in sync with the
+          3D. All copy is real DOM text, driven from SCENE_BEATS. */}
       <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-between py-24">
         <div ref={headline} className="max-w-3xl px-6 text-center">
-          <motion.h1
-            initial={{ opacity: 0, y: 28 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, ease: 'easeOut' }}
-            className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight text-slate-900"
-          >
-            Get your Massachusetts building permit{' '}
-            <span className="text-blue-700">right the first time</span>
-          </motion.h1>
-          <motion.p
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.7, delay: 0.15, ease: 'easeOut' }}
-            className="mt-5 text-lg sm:text-xl text-slate-600"
-          >
-            Describe your project in plain English. PermitIQ maps it to every
-            permit your town requires.
-          </motion.p>
+          <SceneCaption beat={SCENE_BEATS[0]} big />
         </div>
         <motion.div
           ref={hint}
@@ -126,24 +115,20 @@ export default function Hero3DSection() {
           transition={{ duration: 0.8, delay: 0.9 }}
           className="flex flex-col items-center gap-2 text-slate-500"
         >
-          <span className="text-xs font-medium uppercase tracking-widest">Scroll</span>
+          <span className="text-xs font-medium uppercase tracking-widest">
+            Scroll to watch a scan
+          </span>
           <span className="block h-8 w-px animate-pulse bg-slate-400" />
         </motion.div>
       </div>
 
-      {/* scene captions */}
+      {/* scene captions (S2 rules · S3 report) */}
       <div
         ref={capExtract}
         className="pointer-events-none absolute inset-x-0 top-20 flex justify-center opacity-0"
       >
         <div className="max-w-2xl px-6 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">
-            AI reads your project like an inspector would
-          </h2>
-          <p className="mt-3 text-lg text-slate-600">
-            Every requirement — permit type, jurisdiction, timeline, fees —
-            extracted in seconds.
-          </p>
+          <SceneCaption beat={SCENE_BEATS[1]} />
         </div>
       </div>
       <div
@@ -151,68 +136,20 @@ export default function Hero3DSection() {
         className="pointer-events-none absolute inset-x-0 top-20 flex justify-center opacity-0"
       >
         <div className="max-w-2xl px-6 text-center">
-          <h2 className="text-3xl sm:text-4xl font-bold tracking-tight text-slate-900">
-            Tuned to all <span className="text-blue-700">351</span> Massachusetts
-            cities &amp; towns
-          </h2>
-          <p className="mt-3 text-lg text-slate-600">
-            Local bylaws, local fees, local forms — not generic state guidance.
-          </p>
+          <SceneCaption beat={SCENE_BEATS[2]} />
         </div>
       </div>
 
-      {/* S4 dashboard reveal */}
+      {/* S4 report reveal — beat 4 (proof) + the real, sourced Worcester card */}
       <div className="pointer-events-none absolute inset-0 flex items-center justify-center px-6">
-        <div ref={dash} className="w-full max-w-3xl opacity-0">
-          <div className="pointer-events-auto overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
-            <div className="flex items-center gap-2 border-b border-slate-200 bg-slate-50 px-5 py-3">
-              <span className="h-3 w-3 rounded-full bg-slate-300" />
-              <span className="h-3 w-3 rounded-full bg-slate-300" />
-              <span className="h-3 w-3 rounded-full bg-slate-300" />
-              <span className="ml-3 text-sm font-semibold text-slate-700">
-                PermitIQ · Deck — Marblehead, MA
-              </span>
-              <span className="ml-auto rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-700">
-                Permit Ready
-              </span>
-            </div>
-            <div className="grid gap-6 p-6 sm:grid-cols-5">
-              <ul className="space-y-3 sm:col-span-3">
-                {[
-                  'Building permit — Form PIQ-780',
-                  'Zoning compliance review',
-                  'Conservation commission (wetlands)',
-                  'Certified plot plan + deck framing plan',
-                ].map((item) => (
-                  <li key={item} className="flex items-start gap-3 text-sm text-slate-700">
-                    <svg viewBox="0 0 20 20" className="mt-0.5 h-5 w-5 flex-none text-green-600" fill="currentColor">
-                      <path
-                        fillRule="evenodd"
-                        d="M16.704 5.29a1 1 0 010 1.42l-7.5 7.5a1 1 0 01-1.42 0l-3.5-3.5a1 1 0 011.42-1.42l2.79 2.79 6.79-6.79a1 1 0 011.42 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    {item}
-                  </li>
-                ))}
-              </ul>
-              <div className="space-y-4 sm:col-span-2">
-                <div className="rounded-lg bg-slate-50 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Estimated fees
-                  </div>
-                  <div className="mt-1 text-2xl font-extrabold text-slate-900">$150–$320</div>
-                </div>
-                <div className="rounded-lg bg-slate-50 p-4">
-                  <div className="text-xs font-semibold uppercase tracking-wide text-slate-500">
-                    Timeline
-                  </div>
-                  <div className="mt-1 text-2xl font-extrabold text-slate-900">2–4 weeks</div>
-                </div>
-              </div>
-            </div>
+        <div ref={dash} className="w-full max-w-2xl opacity-0">
+          <div className="mb-5 text-center">
+            <h2 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900">
+              {SCENE_BEATS[3].headline}
+            </h2>
           </div>
-          <div className="mt-8 text-center">
+          <DemoReportCard className="pointer-events-auto" />
+          <div className="mt-6 text-center">
             <Link
               to="/analyze"
               className="pointer-events-auto inline-flex items-center rounded-lg bg-blue-700 px-8 py-3.5 text-base font-semibold text-white shadow-lg hover:bg-blue-800 transition"
