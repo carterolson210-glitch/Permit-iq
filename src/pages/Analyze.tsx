@@ -2,8 +2,15 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { MA_TOWNS } from '../data/towns'
-import { analyzeProject, AnalyzeError, type ScanPreview } from '../lib/anthropic'
+import {
+  analyzeProject,
+  createAnonScan,
+  claimAnonScan,
+  AnalyzeError,
+  type ScanPreview,
+} from '../lib/anthropic'
 import { useAuth } from '../lib/auth'
+import { supabase } from '../lib/supabase'
 import { StatusBanner } from '../lib/motion'
 import { fadeUp, staggerChildren } from '../lib/motionVariants'
 import type { PermitAnalysis } from '../lib/types'
@@ -32,6 +39,7 @@ const CATEGORIES = [
 ] as const
 
 const MAX_FILE_BYTES = 5 * 1024 * 1024
+const ANON_TOKEN_KEY = 'piq_anon_token'
 
 async function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -45,7 +53,8 @@ async function fileToBase64(file: File): Promise<string> {
 export default function Analyze() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
-  const { profile, profileLoading, isPaid, scansRemaining, refreshProfile, signOut } = useAuth()
+  const { user, profile, profileLoading, isPaid, scansRemaining, refreshProfile, signOut } =
+    useAuth()
 
   // Re-sync plan/scan state on arrival — it may have changed elsewhere
   // (e.g. a just-completed checkout whose webhook landed moments ago).
@@ -54,7 +63,8 @@ export default function Analyze() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const [step, setStep] = useState<'input' | 'scanning' | 'results'>('input')
+  const [step, setStep] = useState<'input' | 'scanning' | 'results' | 'anon-locked'>('input')
+  const [anonPreview, setAnonPreview] = useState<ScanPreview | null>(null)
   const [description, setDescription] = useState(searchParams.get('project') ?? '')
   const [town, setTown] = useState(searchParams.get('town') ?? '')
   const [townQuery, setTownQuery] = useState(searchParams.get('town') ?? '')
@@ -89,6 +99,73 @@ export default function Analyze() {
   const outOfScans =
     paywall !== null || (!profileLoading && profile !== null && !isPaid && scansRemaining === 0)
 
+  // A visitor who ran an anonymous scan and then signed up/logged in lands
+  // back here with a pending claim token — redeem it automatically so the
+  // account they just created shows their real report immediately, no extra
+  // click. Runs once per token (cleared from storage on any outcome).
+  useEffect(() => {
+    if (!user) return
+    const token = sessionStorage.getItem(ANON_TOKEN_KEY)
+    if (!token) return
+    sessionStorage.removeItem(ANON_TOKEN_KEY)
+    setStep('scanning')
+    claimAnonScan(token)
+      .then((result) => {
+        setAnalysis(result.analysis)
+        setTown(result.town)
+        setTownQuery(result.town)
+        setChecked(new Set())
+        setStep('results')
+        // The original form description isn't part of the claim response —
+        // fall back to the AI's own summary rather than whatever happens to
+        // be sitting in the (unrelated) form fields right now.
+        void saveProject(result.analysis, result.town, '', '', null, null)
+        void refreshProfile()
+      })
+      .catch((e) => {
+        setStep('input')
+        if (e instanceof AnalyzeError) {
+          if (e.code === 'scan_limit') {
+            setPaywall('That scan could not unlock because all 3 free scans on your account have been used.')
+          } else {
+            setError(e.message)
+          }
+        } else {
+          setError('Could not unlock your report. Please try again.')
+        }
+        void refreshProfile()
+      })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user])
+
+  // Pro/Contractor perk: every completed scan is saved so it can be
+  // revisited from /projects. Best-effort — a failed save never blocks or
+  // errors the scan itself, it just means that one report isn't saved.
+  const saveProject = async (
+    analysisToSave: PermitAnalysis,
+    savedTown: string,
+    savedDescription: string,
+    savedCategory: string,
+    savedSqft: number | null,
+    savedValue: number | null
+  ) => {
+    if (!isPaid || !user) return
+    try {
+      await supabase.from('projects').insert({
+        user_id: user.id,
+        title: analysisToSave.project_summary?.slice(0, 120) || `${savedCategory || 'Permit scan'} — ${savedTown}`,
+        description: savedDescription || analysisToSave.project_summary || savedTown,
+        town: savedTown,
+        category: savedCategory || null,
+        square_footage: savedSqft,
+        project_value: savedValue,
+        ai_analysis: analysisToSave,
+      })
+    } catch (e) {
+      logClientError('project_save_failed', e)
+    }
+  }
+
   const acceptFile = (f: File) => {
     if (f.type !== 'application/pdf' && !f.name.toLowerCase().endsWith('.pdf')) {
       setFileError('Only PDF documents are supported.')
@@ -110,6 +187,26 @@ export default function Analyze() {
     setError(null)
     setStep('scanning')
 
+    // Signed-out visitors get one full anonymous scan (zero friction to see
+    // real value) with the result locked behind a free-account claim —
+    // PDFs aren't supported on this path since anon-scan doesn't accept them.
+    if (!user) {
+      try {
+        const result = await createAnonScan({
+          description: description.trim(),
+          town,
+          category: category || undefined,
+        })
+        sessionStorage.setItem(ANON_TOKEN_KEY, result.token)
+        setAnonPreview(result.preview)
+        setStep('anon-locked')
+      } catch (e) {
+        setStep('input')
+        setError(e instanceof AnalyzeError ? e.message : 'Something went wrong. Please try again.')
+      }
+      return
+    }
+
     try {
       const document = file
         ? { name: file.name, data_base64: await fileToBase64(file) }
@@ -125,6 +222,14 @@ export default function Analyze() {
       setAnalysis(result.analysis)
       setChecked(new Set())
       setStep('results')
+      void saveProject(
+        result.analysis,
+        town,
+        description.trim(),
+        category,
+        sqft ? Number(sqft) : null,
+        value ? Number(value) : null
+      )
       void refreshProfile()
     } catch (e) {
       setStep('input')
@@ -153,6 +258,7 @@ export default function Analyze() {
 
   const handleReset = () => {
     setAnalysis(null)
+    setAnonPreview(null)
     setError(null)
     setChecked(new Set())
     setOpenMistakes(new Set())
@@ -197,13 +303,30 @@ export default function Analyze() {
             PermitIQ
           </Link>
           <div className="flex items-center gap-3">
+            {isPaid && (
+              <Link
+                to="/projects"
+                className="text-sm font-medium text-ink-muted hover:text-primary transition"
+              >
+                My projects
+              </Link>
+            )}
             <ScanCounter />
-            <button
-              onClick={handleSignOut}
-              className="text-sm font-medium text-ink-muted hover:text-primary transition"
-            >
-              Sign out
-            </button>
+            {user ? (
+              <button
+                onClick={handleSignOut}
+                className="text-sm font-medium text-ink-muted hover:text-primary transition"
+              >
+                Sign out
+              </button>
+            ) : (
+              <Link
+                to="/login"
+                className="text-sm font-medium text-ink-muted hover:text-primary transition"
+              >
+                Sign in
+              </Link>
+            )}
           </div>
         </nav>
       </header>
@@ -373,7 +496,9 @@ export default function Analyze() {
                     </div>
                   </div>
 
-                  {/* Document upload */}
+                  {/* Document upload — sign in to attach a document; the
+                      zero-friction anonymous scan is text-only. */}
+                  {user && (
                   <div>
                     <label className="block text-sm font-medium text-slate-700 mb-2">
                       Permit document <span className="text-slate-400 font-normal">(optional, PDF up to 5 MB)</span>
@@ -445,6 +570,7 @@ export default function Analyze() {
                       {fileError && <StatusBanner kind="error">{fileError}</StatusBanner>}
                     </AnimatePresence>
                   </div>
+                  )}
 
                   <AnimatePresence>
                     {error && <StatusBanner kind="error">{error}</StatusBanner>}
@@ -465,11 +591,21 @@ export default function Analyze() {
                       {scansRemaining === 1 ? '' : 's'}. Failed scans are never counted.
                     </p>
                   )}
+                  {!user && (
+                    <p className="text-center text-xs text-ink-muted">
+                      No account needed — we'll run the full analysis now. Create a free account
+                      afterward to unlock it (no credit card required).
+                    </p>
+                  )}
                 </motion.div>
               </motion.section>
             )}
 
             {step === 'scanning' && <ScanAnimation town={town} documentName={file?.name} />}
+
+            {step === 'anon-locked' && anonPreview && (
+              <AnonLockedPreview preview={anonPreview} onStartOver={handleReset} />
+            )}
 
             {step === 'results' && analysis && !isPaid && scansRemaining === 0 && (
               <motion.div
@@ -505,12 +641,111 @@ export default function Analyze() {
   )
 }
 
+/**
+ * Shown after an anonymous (signed-out) scan completes. The full report
+ * already exists server-side (stashed behind a claim token in sessionStorage)
+ * — this is the "value first, wall second" moment: a real teaser of what was
+ * found, with account creation as the only remaining step to unlock it.
+ */
+function AnonLockedPreview({
+  preview,
+  onStartOver,
+}: {
+  preview: ScanPreview
+  onStartOver: () => void
+}) {
+  return (
+    <motion.section
+      variants={staggerChildren}
+      initial="hidden"
+      animate="show"
+      className="py-6 sm:py-10"
+    >
+      <motion.div variants={fadeUp} className="mx-auto max-w-2xl text-center">
+        <span className="inline-flex items-center rounded-full bg-emerald-50 border border-emerald-200 px-3 py-1 text-xs font-semibold text-emerald-800">
+          Your analysis is ready
+        </span>
+        <h1 className="mt-4 text-3xl sm:text-4xl font-extrabold tracking-tight text-ink">
+          We found {preview.permit_count} permit{preview.permit_count === 1 ? '' : 's'} for your
+          project in {preview.town}
+        </h1>
+        <p className="mt-3 text-ink-muted">
+          Create a free account to unlock the full report — no credit card required. This uses 1
+          of your 3 free scans.
+        </p>
+      </motion.div>
+
+      <motion.div
+        variants={fadeUp}
+        className="mx-auto mt-8 max-w-2xl overflow-hidden rounded-2xl border border-line bg-white shadow-card"
+      >
+        <div className="border-b border-line bg-slate-50 px-6 py-4 text-left">
+          <p className="text-sm text-ink">
+            {preview.commonly_missed_count > 0 && (
+              <>
+                Including{' '}
+                <strong className="text-red-600">
+                  {preview.commonly_missed_count} that{' '}
+                  {preview.commonly_missed_count === 1 ? 'is' : 'are'} commonly missed
+                </strong>
+                .{' '}
+              </>
+            )}
+            {preview.timeline_estimate && (
+              <>
+                Estimated approval timeline: <strong>{preview.timeline_estimate}</strong>.
+              </>
+            )}
+          </p>
+        </div>
+        <div className="relative px-6 py-5 text-left" aria-hidden="true">
+          <ul className="space-y-3 blur-[6px] select-none">
+            {(preview.permit_names.length > 0
+              ? preview.permit_names
+              : ['Building Permit', 'Zoning Review', 'Trade Permit']
+            ).map((name, i) => (
+              <li key={i} className="flex items-center gap-3">
+                <span className="h-5 w-5 flex-none rounded-full bg-slate-200" />
+                <span className="text-sm text-ink">{name} — requirements, fees, documents…</span>
+              </li>
+            ))}
+          </ul>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="inline-flex items-center gap-2 rounded-full bg-ink/80 px-4 py-2 text-sm font-semibold text-white shadow-lg">
+              <svg viewBox="0 0 20 20" className="h-4 w-4" fill="currentColor" aria-hidden="true">
+                <path fillRule="evenodd" d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z" clipRule="evenodd" />
+              </svg>
+              Unlock the full report
+            </span>
+          </div>
+        </div>
+      </motion.div>
+
+      <motion.div variants={fadeUp} className="mx-auto mt-8 flex max-w-2xl flex-col items-center gap-3">
+        <Link
+          to={`/login?next=${encodeURIComponent('/analyze')}`}
+          className="inline-flex w-full max-w-sm items-center justify-center rounded-lg bg-primary px-6 py-3.5 text-base font-semibold text-white shadow hover:bg-blue-900 transition"
+        >
+          Create free account — unlock my report
+        </Link>
+        <button
+          type="button"
+          onClick={onStartOver}
+          className="text-sm font-medium text-ink-muted hover:text-primary transition"
+        >
+          Start over
+        </button>
+      </motion.div>
+    </motion.section>
+  )
+}
+
 function formatMoney(n: number): string {
   if (!Number.isFinite(n)) return '—'
   return n.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })
 }
 
-type ResultsProps = {
+export type ResultsProps = {
   analysis: PermitAnalysis
   town: string
   checked: Set<number>
@@ -522,7 +757,7 @@ type ResultsProps = {
   onReset: () => void
 }
 
-function Results({
+export function Results({
   analysis,
   town,
   checked,

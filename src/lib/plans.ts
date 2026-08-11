@@ -60,10 +60,9 @@ export const PLAN_DEFS: PlanDef[] = [
     features: [
       'Everything in Pro',
       'Multi-project dashboard',
-      'Up to 5 team seats',
-      'Client-shareable reports with your branding',
-      'Priority processing',
-      'Permit deadline reminders',
+      'Up to 5 team seats (coming soon)',
+      'Client-shareable reports with your branding (coming soon)',
+      'Permit deadline reminders (coming soon)',
     ],
   },
 ]

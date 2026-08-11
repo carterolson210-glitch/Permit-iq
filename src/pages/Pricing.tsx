@@ -19,10 +19,9 @@ const COMPARISON: { feature: string; free: Cell; pro: Cell; contractor: Cell }[]
   { feature: 'PDF export', free: 'Watermarked', pro: 'Unwatermarked', contractor: 'Unwatermarked' },
   { feature: 'Saved projects', free: false, pro: true, contractor: true },
   { feature: 'Multi-project dashboard', free: false, pro: false, contractor: true },
-  { feature: 'Team seats', free: false, pro: false, contractor: 'Up to 5' },
-  { feature: 'Client-shareable branded reports', free: false, pro: false, contractor: true },
-  { feature: 'Priority processing', free: false, pro: false, contractor: true },
-  { feature: 'Permit deadline reminders', free: false, pro: false, contractor: true },
+  { feature: 'Team seats', free: false, pro: false, contractor: 'Coming soon' },
+  { feature: 'Client-shareable branded reports', free: false, pro: false, contractor: 'Coming soon' },
+  { feature: 'Permit deadline reminders', free: false, pro: false, contractor: 'Coming soon' },
 ]
 
 const FAQS: { q: string; a: string }[] = [
@@ -48,7 +47,7 @@ const FAQS: { q: string; a: string }[] = [
   },
   {
     q: 'Pro vs. Contractor — which one do I need?',
-    a: 'Pro fits a homeowner or DIYer managing their own project(s). Contractor adds the tools a pro needs across many jobs: a multi-project dashboard, up to 5 team seats, deadline reminders, and client-shareable reports with your branding.',
+    a: 'Pro fits a homeowner or DIYer managing their own project(s). Contractor adds a multi-project dashboard for running many jobs at once, with team seats, deadline reminders, and client-shareable branded reports on the roadmap next.',
   },
 ]
 

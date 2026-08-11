@@ -6,6 +6,7 @@ export type AnalyzeErrorCode =
   | 'validation'
   | 'rate_limit'
   | 'scan_limit'
+  | 'ip_limit'
   | 'ai_error'
   | 'network'
   | 'timeout'
@@ -55,6 +56,7 @@ const KNOWN_CODES: readonly AnalyzeErrorCode[] = [
   'validation',
   'rate_limit',
   'scan_limit',
+  'ip_limit',
   'ai_error',
 ]
 
@@ -109,6 +111,91 @@ export async function analyzeProject(input: AnalyzeInput): Promise<AnalyzeResult
   }
   return {
     analysis: body.analysis as PermitAnalysis,
+    scans_remaining: (body.scans_remaining ?? null) as number | null,
+  }
+}
+
+export interface AnonScanInput {
+  description: string
+  town: string
+  category?: string
+}
+
+export interface AnonScanCreateResult {
+  token: string
+  preview: ScanPreview
+}
+
+/**
+ * Zero-friction activation: runs one full analysis before the visitor has an
+ * account. Never returns full report content — only a teaser preview plus a
+ * claim token, redeemed via `claimAnonScan` after signup/login.
+ */
+export async function createAnonScan(input: AnonScanInput): Promise<AnonScanCreateResult> {
+  const url = functionUrl('anon-scan')
+  if (!url) throw new AnalyzeError('Supabase is not configured.', 'unknown')
+
+  const controller = new AbortController()
+  const timer = setTimeout(() => controller.abort(), 120_000)
+  let resp: Response
+  try {
+    resp = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json',
+        apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
+      },
+      body: JSON.stringify(input),
+      signal: controller.signal,
+    })
+  } catch (e) {
+    if (e instanceof DOMException && e.name === 'AbortError') {
+      throw new AnalyzeError('The scan timed out. Please try again.', 'timeout')
+    }
+    throw new AnalyzeError('Could not reach the scan service. Check your connection and try again.', 'network')
+  } finally {
+    clearTimeout(timer)
+  }
+
+  const body = await resp.json().catch(() => ({}))
+  if (!resp.ok) {
+    const code = KNOWN_CODES.includes(body?.code) ? (body.code as AnalyzeErrorCode) : 'unknown'
+    throw new AnalyzeError(body?.error ?? 'Analysis failed. Please try again.', code)
+  }
+  return { token: body.token as string, preview: body.preview as ScanPreview }
+}
+
+/** Claims a stashed anonymous report after the visitor signs up or logs in. */
+export async function claimAnonScan(
+  token: string
+): Promise<{ analysis: PermitAnalysis; town: string; scans_remaining: number | null }> {
+  const url = functionUrl('anon-scan')
+  if (!url) throw new AnalyzeError('Supabase is not configured.', 'unknown')
+
+  const { data: session } = await supabase.auth.getSession()
+  const accessToken = session.session?.access_token
+  if (!accessToken) throw new AnalyzeError('Your session has expired. Please sign in again.', 'auth')
+
+  const resp = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      authorization: `Bearer ${accessToken}`,
+      apikey: import.meta.env.VITE_SUPABASE_ANON_KEY ?? '',
+    },
+    body: JSON.stringify({ action: 'claim', token }),
+  })
+  const body = await resp.json().catch(() => ({}))
+  if (!resp.ok) {
+    // 'expired' is server-specific (claim window passed / already claimed by
+    // someone else) and has no dedicated client code — the message alone is
+    // enough to explain it to the user.
+    const code = KNOWN_CODES.includes(body?.code) ? (body.code as AnalyzeErrorCode) : 'unknown'
+    throw new AnalyzeError(body?.error ?? 'Could not unlock your report. Please try again.', code)
+  }
+  return {
+    analysis: body.analysis as PermitAnalysis,
+    town: body.town as string,
     scans_remaining: (body.scans_remaining ?? null) as number | null,
   }
 }

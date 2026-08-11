@@ -35,7 +35,7 @@ export default function TrustPanel({
           Where this information comes from
         </h2>
         <ConfidenceBadge
-          level={profile ? 'high' : analysis.confidence}
+          level={analysis.confidence ?? (profile ? 'high' : undefined)}
           verified={Boolean(profile)}
         />
       </div>
@@ -82,7 +82,7 @@ export default function TrustPanel({
       <div className="mt-4 text-sm text-slate-600">
         <p>
           {profile
-            ? 'The checklist above was AI-generated for your specific project, cross-referenced with the verified town data shown here.'
+            ? 'The checklist above was AI-generated for your specific project. The model was given the verified figures shown here and instructed to use them wherever they apply — but the report also covers permits and details beyond what we’ve hand-verified, so treat items not shown here as AI-researched.'
             : `The checklist above was AI-researched for ${town} from publicly available municipal information.`}{' '}
           Fee schedules change — confirm amounts with the building department before
           filing.
@@ -138,9 +138,12 @@ function ConfidenceBadge({
     medium: 'bg-amber-100 text-amber-700',
     low: 'bg-red-100 text-red-700',
   } as const
-  const label = verified
-    ? 'High confidence · town-verified data'
-    : `${level[0].toUpperCase()}${level.slice(1)} confidence · AI-researched`
+  const label =
+    verified && level === 'high'
+      ? 'High confidence · town-verified data'
+      : verified
+        ? `${level[0].toUpperCase()}${level.slice(1)} confidence · partially town-verified`
+        : `${level[0].toUpperCase()}${level.slice(1)} confidence · AI-researched`
   return (
     <span className={`rounded-full px-3 py-1 text-xs font-semibold ${styles[level]}`}>
       {label}

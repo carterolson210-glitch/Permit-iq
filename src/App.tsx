@@ -18,6 +18,8 @@ import Terms from './pages/Terms'
 import TownPermitPage from './pages/TownPermitPage'
 import Pricing from './pages/Pricing'
 import Checkout from './pages/Checkout'
+import Projects from './pages/Projects'
+import ProjectDetail from './pages/ProjectDetail'
 import HowWeVerify from './pages/HowWeVerify'
 import ErrorBoundary from './components/ErrorBoundary'
 import GraceBanner from './components/GraceBanner'
@@ -87,11 +89,12 @@ function AnimatedRoutes() {
         <Route
           path="/analyze"
           element={
-            <RequireAuth>
-              <PageTransition>
-                <Analyze />
-              </PageTransition>
-            </RequireAuth>
+            // Signed out visitors can run one full anonymous scan here (see
+            // anon-scan wiring in Analyze.tsx) — this is the zero-friction
+            // activation path, so it must not require auth.
+            <PageTransition>
+              <Analyze />
+            </PageTransition>
           }
         />
         <Route
@@ -108,6 +111,26 @@ function AnimatedRoutes() {
             <RequireAuth>
               <PageTransition>
                 <Checkout />
+              </PageTransition>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/projects"
+          element={
+            <RequireAuth>
+              <PageTransition>
+                <Projects />
+              </PageTransition>
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/projects/:id"
+          element={
+            <RequireAuth>
+              <PageTransition>
+                <ProjectDetail />
               </PageTransition>
             </RequireAuth>
           }

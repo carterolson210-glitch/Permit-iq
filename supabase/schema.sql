@@ -239,6 +239,13 @@ create table if not exists public.scan_events (
 create index if not exists scan_events_user_recent_idx
   on public.scan_events(user_id, created_at desc);
 
+-- Sybil/abuse guard: hashed request IP, used to cap free-scan consumption
+-- per IP regardless of how many disposable accounts hit it from (see
+-- reserve_scan below). Never stores a raw IP.
+alter table public.scan_events add column if not exists ip_hash text;
+create index if not exists scan_events_ip_recent_idx
+  on public.scan_events(ip_hash, created_at desc) where consumed_free_scan;
+
 -- Migration for pre-existing databases: 'preview' rows track the
 -- metadata-only paywall previews (rate-limited per day, never consume scans).
 alter table public.scan_events drop constraint if exists scan_events_status_check;
@@ -260,19 +267,31 @@ create policy "scan_events_self_select" on public.scan_events
 --   * paid plans (not expired) scan without consuming free credits
 --   * free plans consume one of 3 credits, incremented under a row lock
 --     so concurrent requests cannot exceed the limit
+--   * free plans are additionally capped per IP (p_ip_hash) over a rolling
+--     24h window, so disposable-email signups can't farm unlimited free
+--     AI reports from one network — 3 accounts' worth per IP per day is
+--     generous for legitimate shared IPs (office, family) while making
+--     mass account creation pointless.
 -- Returns: { allowed, reason?, event_id?, remaining }
 --   remaining is null for unlimited (paid) plans.
+-- Migration: the p_ip_hash parameter was added after the original 3-arg
+-- version shipped; drop that overload so `create or replace` below actually
+-- replaces it instead of leaving two versions installed.
+drop function if exists public.reserve_scan(uuid, text, text);
 create or replace function public.reserve_scan(
   p_user_id uuid,
   p_town text default null,
-  p_category text default null
+  p_category text default null,
+  p_ip_hash text default null
 ) returns jsonb
 language plpgsql security definer set search_path = public as $$
 declare
   u record;
   v_event uuid;
   v_used int;
+  v_ip_used int;
   v_limit constant int := 3;
+  v_ip_limit constant int := 9;
 begin
   select * into u from public.users where id = p_user_id for update;
   if not found then
@@ -285,8 +304,8 @@ begin
        (u.plan_expires_at is null or u.plan_expires_at > now())
        or coalesce(u.grace_until, timestamptz 'epoch') > now()
      ) then
-    insert into public.scan_events (user_id, status, consumed_free_scan, town, category)
-    values (p_user_id, 'started', false, p_town, p_category)
+    insert into public.scan_events (user_id, status, consumed_free_scan, town, category, ip_hash)
+    values (p_user_id, 'started', false, p_town, p_category, p_ip_hash)
     returning id into v_event;
     return jsonb_build_object('allowed', true, 'event_id', v_event, 'remaining', null);
   end if;
@@ -296,12 +315,24 @@ begin
     return jsonb_build_object('allowed', false, 'reason', 'limit', 'remaining', 0);
   end if;
 
+  if p_ip_hash is not null then
+    select count(*) into v_ip_used
+      from public.scan_events
+      where ip_hash = p_ip_hash
+        and consumed_free_scan
+        and status <> 'refunded'
+        and created_at > now() - interval '24 hours';
+    if v_ip_used >= v_ip_limit then
+      return jsonb_build_object('allowed', false, 'reason', 'ip_limit', 'remaining', v_limit - v_used);
+    end if;
+  end if;
+
   update public.users
     set free_analyses_used = v_used + 1
     where id = p_user_id;
 
-  insert into public.scan_events (user_id, status, consumed_free_scan, town, category)
-  values (p_user_id, 'started', true, p_town, p_category)
+  insert into public.scan_events (user_id, status, consumed_free_scan, town, category, ip_hash)
+  values (p_user_id, 'started', true, p_town, p_category, p_ip_hash)
   returning id into v_event;
 
   return jsonb_build_object(
@@ -347,7 +378,7 @@ begin
 end $$;
 
 -- These functions must only be callable by the service role (edge functions).
-revoke all on function public.reserve_scan(uuid, text, text) from public, anon, authenticated;
+revoke all on function public.reserve_scan(uuid, text, text, text) from public, anon, authenticated;
 revoke all on function public.refund_scan(uuid) from public, anon, authenticated;
 revoke all on function public.finish_scan(uuid, text) from public, anon, authenticated;
 

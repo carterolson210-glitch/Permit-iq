@@ -15,6 +15,11 @@
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { verifiedFactsPromptBlock } from '../_shared/townFacts.ts'
+
+function logUsage(label: string, model: string, usage: unknown) {
+  console.log(JSON.stringify({ metric: 'openai_usage', label, model, usage }))
+}
 
 const MAX_DESCRIPTION_CHARS = 4000
 const CREATES_PER_IP_PER_DAY = 2
@@ -156,17 +161,36 @@ Deno.serve(async (req: Request) => {
     }
 
     if (!row.claimed_by) {
-      // First claim consumes one free scan, atomically.
+      // First claim consumes one free scan, atomically. Pass the request IP
+      // (same hashing as the anonymous-create path below) so a claimed scan
+      // counts toward the per-IP free-scan cap just like a direct scan would
+      // — otherwise claim would be a loophole around that cap.
+      const claimIp =
+        req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+        req.headers.get('cf-connecting-ip') ??
+        'unknown'
+      const claimIpHash = await sha256Hex(`piq-auth:${claimIp}`)
       const { data: reservation, error: reserveError } = await admin.rpc('reserve_scan', {
         p_user_id: user.id,
         p_town: row.town,
         p_category: row.category,
+        p_ip_hash: claimIpHash,
       })
       if (reserveError || !reservation) {
         console.error('reserve_scan failed:', reserveError)
         return json({ error: 'Unexpected error' }, 500, cors)
       }
       if (!reservation.allowed) {
+        if (reservation.reason === 'ip_limit') {
+          return json(
+            {
+              error:
+                'Too many free scans have been run from this network today. Please try again tomorrow, or upgrade for unlimited scans.',
+              code: 'ip_limit',
+            },
+            429, cors
+          )
+        }
         return json(
           { error: 'You have used all 3 free scans. Upgrade to continue.', code: 'scan_limit' },
           402, cors
@@ -222,6 +246,7 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    const verifiedBlock = verifiedFactsPromptBlock(town)
     const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -239,6 +264,7 @@ Deno.serve(async (req: Request) => {
             content:
               `Project description: ${description}\nTown: ${town}, Massachusetts\n` +
               (category ? `Category: ${category}\n` : '') +
+              (verifiedBlock ? `\n${verifiedBlock}\n` : '') +
               '\nProvide a complete permit analysis as JSON only.',
           },
         ],
@@ -249,6 +275,7 @@ Deno.serve(async (req: Request) => {
       throw new Error('ai_error')
     }
     const data = await resp.json()
+    logUsage('anon-scan', OPENAI_MODEL, data?.usage)
     const choice = data?.choices?.[0]
     if (choice?.finish_reason === 'length') throw new Error('ai_error')
     const parsed = parseAnalysis(choice?.message?.content ?? '')

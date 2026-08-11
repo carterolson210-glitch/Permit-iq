@@ -9,6 +9,7 @@
 
 import 'jsr:@supabase/functions-js/edge-runtime.d.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { verifiedFactsPromptBlock } from '../_shared/townFacts.ts'
 
 // max_completion_tokens must leave headroom for gpt-5.x reasoning tokens,
 // which are billed/counted but not returned in the message content.
@@ -18,6 +19,20 @@ const OPENAI_PREVIEW_MODEL = 'gpt-5.4-mini'
 const RATE_LIMIT_PER_HOUR = 10
 const MAX_DESCRIPTION_CHARS = 4000
 const MAX_PDF_BASE64_CHARS = 7_200_000 // ≈ 5.4 MB binary
+
+async function sha256Hex(s: string): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(s))
+  return Array.from(new Uint8Array(digest))
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('')
+}
+
+/** Cost visibility: logs real token usage so $/report can be checked against
+ *  the account's actual OpenAI billing rate as usage grows (no rate is
+ *  hardcoded here since it varies by model/contract and changes over time). */
+function logUsage(label: string, model: string, usage: unknown) {
+  console.log(JSON.stringify({ metric: 'openai_usage', label, model, usage }))
+}
 
 const SYSTEM_PROMPT = `You are an expert Massachusetts building permit consultant with 20 years of experience helping contractors and homeowners navigate the Massachusetts building code (780 CMR), local zoning bylaws, and municipal permit processes across all 351 MA cities and towns.
 
@@ -149,6 +164,12 @@ Deno.serve(async (req: Request) => {
 
   const admin = createClient(supabaseUrl, serviceKey)
 
+  const ip =
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ??
+    req.headers.get('cf-connecting-ip') ??
+    'unknown'
+  const ipHash = await sha256Hex(`piq-auth:${ip}`)
+
   // ── Rate limit: max N scan attempts per rolling hour ────────
   const oneHourAgo = new Date(Date.now() - 3600_000).toISOString()
   const { count, error: rlError } = await admin
@@ -167,11 +188,14 @@ Deno.serve(async (req: Request) => {
     )
   }
 
-  // ── Atomically reserve a scan (enforces the 3-free-scan limit) ──
+  // ── Atomically reserve a scan (enforces the 3-free-scan limit, plus a
+  //    per-IP cap on free scans so disposable-email signups can't farm
+  //    unlimited paid AI calls from one network) ──
   const { data: reservation, error: reserveError } = await admin.rpc('reserve_scan', {
     p_user_id: user.id,
     p_town: town,
     p_category: category || null,
+    p_ip_hash: ipHash,
   })
   if (reserveError || !reservation) {
     console.error('reserve_scan failed:', reserveError)
@@ -195,6 +219,17 @@ Deno.serve(async (req: Request) => {
         402, cors
       )
     }
+    if (reservation.reason === 'ip_limit') {
+      return json(
+        {
+          error:
+            'Too many free scans have been run from this network today. Please try again tomorrow, or upgrade for unlimited scans.',
+          code: 'ip_limit',
+          scans_remaining: reservation.remaining ?? null,
+        },
+        429, cors
+      )
+    }
     return json({ error: 'Account not found.', code: 'auth' }, 401, cors)
   }
   const eventId = reservation.event_id as string
@@ -202,6 +237,7 @@ Deno.serve(async (req: Request) => {
 
   // ── Call OpenAI; refund the reserved scan on any failure ────
   try {
+    const verifiedBlock = verifiedFactsPromptBlock(town)
     const userText =
       `Project description: ${description}\n` +
       `Town: ${town}, Massachusetts\n` +
@@ -209,6 +245,7 @@ Deno.serve(async (req: Request) => {
       (squareFootage != null ? `Square footage: ${squareFootage}\n` : '') +
       (projectValue != null ? `Estimated project value: $${projectValue}\n` : '') +
       (pdfName ? `Attached document: ${pdfName}\n` : '') +
+      (verifiedBlock ? `\n${verifiedBlock}\n` : '') +
       '\nProvide a complete permit analysis as JSON only.'
 
     const content: unknown[] = []
@@ -247,6 +284,7 @@ Deno.serve(async (req: Request) => {
     }
 
     const data = await openaiResponse.json()
+    logUsage('analyze-project', OPENAI_MODEL, data?.usage)
     const choice = data?.choices?.[0]
     if (choice?.finish_reason === 'length') {
       console.error('OpenAI output truncated (finish_reason=length)')
@@ -330,6 +368,7 @@ async function generateLockedPreview(
     })
     if (!resp.ok) return null
     const data = await resp.json()
+    logUsage('analyze-project-preview', OPENAI_PREVIEW_MODEL, data?.usage)
     const text = data?.choices?.[0]?.message?.content ?? ''
     const first = text.indexOf('{')
     const last = text.lastIndexOf('}')
