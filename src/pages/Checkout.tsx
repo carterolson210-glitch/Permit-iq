@@ -13,6 +13,7 @@ import {
 } from '../lib/plans'
 import { BillingToggle } from '../components/Paywall'
 import { useAuth } from '../lib/auth'
+import { track } from '../lib/analytics'
 
 const publishableKey = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY as
   | string
@@ -140,7 +141,10 @@ export default function Checkout() {
     setError(null)
     fetchCheckoutClientSecret(plan, billing)
       .then((secret) => {
-        if (!cancelled) setClientSecret(secret)
+        if (!cancelled) {
+          setClientSecret(secret)
+          track('checkout_started', { plan, billing })
+        }
       })
       .catch((e) => {
         if (!cancelled)
@@ -151,7 +155,10 @@ export default function Checkout() {
     }
   }, [plan, billing, attempt])
 
-  const onComplete = useCallback(() => setComplete(true), [])
+  const onComplete = useCallback(() => {
+    setComplete(true)
+    track('checkout_completed', { plan, billing })
+  }, [plan, billing])
 
   // The Stripe webhook flips the account to paid a moment after payment.
   // Poll the profile until it lands so the whole app (scan counter, paywall)

@@ -14,6 +14,7 @@ import CompareSection from '../components/townproof/CompareSection'
 import { TOWN_PROFILES, VERIFIED_TOWN_COUNT } from '../data/townPermits'
 import { DEMO_TOWN_SLUG } from '../data/demoReport'
 import SocialProof from '../components/SocialProof'
+import { track } from '../lib/analytics'
 
 export default function Landing() {
   const navigate = useNavigate()
@@ -23,6 +24,10 @@ export default function Landing() {
   const [scrolled, setScrolled] = useState(false)
   const [heroCtaVisible, setHeroCtaVisible] = useState(true)
   const heroCtaRef = useRef<HTMLButtonElement | null>(null)
+
+  useEffect(() => {
+    track('landing_view')
+  }, [])
 
   const handleSubmit = () => {
     const params = new URLSearchParams()

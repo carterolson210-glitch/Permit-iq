@@ -19,6 +19,7 @@ import ScanAnimation from '../components/ScanAnimation'
 import Paywall from '../components/Paywall'
 import TrustPanel from '../components/TrustPanel'
 import { logClientError } from '../lib/monitor'
+import { track } from '../lib/analytics'
 
 const CATEGORIES = [
   'New Construction',
@@ -98,6 +99,19 @@ export default function Analyze() {
   // covers the race where another tab used the last scan first.
   const outOfScans =
     paywall !== null || (!profileLoading && profile !== null && !isPaid && scansRemaining === 0)
+
+  // Fires once per time the paywall becomes visible, regardless of which of
+  // the several paths above triggered it (server scan_limit error vs. a
+  // free account that's already at 0 arriving straight at /analyze).
+  const paywallShownRef = useRef(false)
+  useEffect(() => {
+    if (outOfScans && !paywallShownRef.current) {
+      paywallShownRef.current = true
+      track('paywall_shown')
+    } else if (!outOfScans) {
+      paywallShownRef.current = false
+    }
+  }, [outOfScans])
 
   // A visitor who ran an anonymous scan and then signed up/logged in lands
   // back here with a pending claim token — redeem it automatically so the
@@ -186,6 +200,7 @@ export default function Analyze() {
     }
     setError(null)
     setStep('scanning')
+    track('scan_started', { anon: !user })
 
     // Signed-out visitors get one full anonymous scan (zero friction to see
     // real value) with the result locked behind a free-account claim —
@@ -200,6 +215,7 @@ export default function Analyze() {
         sessionStorage.setItem(ANON_TOKEN_KEY, result.token)
         setAnonPreview(result.preview)
         setStep('anon-locked')
+        track('scan_completed', { anon: true })
       } catch (e) {
         setStep('input')
         setError(e instanceof AnalyzeError ? e.message : 'Something went wrong. Please try again.')
@@ -222,6 +238,7 @@ export default function Analyze() {
       setAnalysis(result.analysis)
       setChecked(new Set())
       setStep('results')
+      track('scan_completed', { anon: false })
       void saveProject(
         result.analysis,
         town,

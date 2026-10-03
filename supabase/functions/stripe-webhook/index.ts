@@ -105,6 +105,7 @@ Deno.serve(async (req: Request) => {
         if (resendKey && user?.email) {
           await sendConfirmationEmail(resendKey, user.email, plan)
         }
+        await logEvent(admin, 'upgrade', userId, { plan, billing })
         break
       }
 
@@ -168,6 +169,11 @@ async function downgrade(
   admin: ReturnType<typeof createClient>,
   customerId: string
 ) {
+  const { data: user } = await admin
+    .from('users')
+    .select('id')
+    .eq('stripe_customer_id', customerId)
+    .maybeSingle()
   await admin
     .from('users')
     .update({
@@ -179,6 +185,22 @@ async function downgrade(
       plan_expires_at: null,
     })
     .eq('stripe_customer_id', customerId)
+  if (user?.id) await logEvent(admin, 'cancel', user.id)
+}
+
+/** Fire-and-forget funnel event, written server-side since the webhook is
+ *  the only reliable source of truth for billing lifecycle changes. */
+async function logEvent(
+  admin: ReturnType<typeof createClient>,
+  event: string,
+  userId: string | null,
+  props?: Record<string, unknown>
+) {
+  try {
+    await admin.from('analytics_events').insert({ event, user_id: userId, props: props ?? null })
+  } catch (err) {
+    console.error('analytics insert failed:', err)
+  }
 }
 
 /** Failed payment: keep access for GRACE_DAYS while Stripe retries. */

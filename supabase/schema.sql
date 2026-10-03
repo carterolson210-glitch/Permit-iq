@@ -463,3 +463,25 @@ drop policy if exists client_events_insert on public.client_events;
 create policy client_events_insert on public.client_events
   for insert to anon, authenticated with check (true);
 create index if not exists client_events_created_idx on public.client_events (created_at desc);
+
+-- ── Funnel analytics ─────────────────────────────────────────────────
+-- First-party, insert-only (same pattern as client_events) — no
+-- third-party script and no cookies beyond a per-browser localStorage id,
+-- so this needs no cookie banner. Lifecycle-truth events (upgrade, cancel)
+-- are written server-side by stripe-webhook using the service role;
+-- everything else is written from the browser via analytics_events_insert.
+create table if not exists public.analytics_events (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  event text not null check (char_length(event) <= 60),
+  user_id uuid,
+  anon_id text check (char_length(anon_id) <= 64),
+  props jsonb,
+  url text check (char_length(url) <= 500)
+);
+alter table public.analytics_events enable row level security;
+drop policy if exists analytics_events_insert on public.analytics_events;
+create policy analytics_events_insert on public.analytics_events
+  for insert to anon, authenticated with check (true);
+create index if not exists analytics_events_event_created_idx
+  on public.analytics_events (event, created_at desc);
