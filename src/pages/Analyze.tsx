@@ -1054,11 +1054,106 @@ export function Results({
       </motion.div>
 
       {/* Disclaimer */}
-      <motion.p variants={fadeUp} className="text-xs text-slate-500 leading-relaxed border-t border-line pt-6">
-        {analysis.disclaimer ||
-          'AI analysis for informational purposes only. Not legal advice. Always verify with your local building department.'}
-      </motion.p>
+      <motion.div variants={fadeUp} className="border-t border-line pt-6">
+        <p className="text-xs text-slate-500 leading-relaxed">
+          {analysis.disclaimer ||
+            'AI analysis for informational purposes only. Not legal advice. Always verify with your local building department.'}
+        </p>
+        <div className="mt-3 print:hidden">
+          <ReportError town={town} analysis={analysis} />
+        </div>
+      </motion.div>
     </motion.section>
+  )
+}
+
+/**
+ * "Report an error" — data-accuracy feedback on this specific result,
+ * distinct from logClientError (which reports JS crashes). Shown on every
+ * surface that renders Results: /analyze, /projects/:id, and the public
+ * /share/:token page, so homeowners viewing a shared report can flag
+ * something too (user_id is null for anonymous viewers, which the
+ * content_reports insert policy allows).
+ */
+function ReportError({ town, analysis }: { town: string; analysis: PermitAnalysis }) {
+  const [open, setOpen] = useState(false)
+  const [message, setMessage] = useState('')
+  const [state, setState] = useState<'idle' | 'sending' | 'done' | 'error'>('idle')
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmed = message.trim()
+    if (!trimmed) return
+    setState('sending')
+    try {
+      const { data } = await supabase.auth.getUser()
+      const { error } = await supabase.from('content_reports').insert({
+        user_id: data.user?.id ?? null,
+        town,
+        message: trimmed.slice(0, 2000),
+        analysis,
+        url: window.location.pathname,
+      })
+      if (error) throw error
+      setState('done')
+    } catch (e) {
+      setState('error')
+      logClientError('content_report_failed', e)
+    }
+  }
+
+  if (state === 'done') {
+    return <p className="text-xs text-accent">Thanks — we'll take a look.</p>
+  }
+
+  if (!open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className="text-xs font-medium text-ink-muted underline transition hover:text-primary"
+      >
+        Spot something wrong? Report an error
+      </button>
+    )
+  }
+
+  return (
+    <form onSubmit={submit} className="space-y-2">
+      <label htmlFor="report-error-message" className="sr-only">
+        What looks wrong?
+      </label>
+      <textarea
+        id="report-error-message"
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+        rows={3}
+        maxLength={2000}
+        placeholder={`What looks wrong about this ${town} report?`}
+        className="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm shadow-sm placeholder:text-slate-400 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30"
+      />
+      <div className="flex items-center gap-3">
+        <button
+          type="submit"
+          disabled={state === 'sending' || !message.trim()}
+          className="rounded-md bg-primary px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-blue-900 disabled:opacity-60"
+        >
+          {state === 'sending' ? 'Sending…' : 'Submit report'}
+        </button>
+        <button
+          type="button"
+          onClick={() => setOpen(false)}
+          className="text-xs font-medium text-ink-muted hover:text-ink"
+        >
+          Cancel
+        </button>
+      </div>
+      {state === 'error' && (
+        <p className="text-xs text-error" role="alert">
+          Could not send — please try again.
+        </p>
+      )}
+    </form>
   )
 }
 

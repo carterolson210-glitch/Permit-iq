@@ -533,3 +533,23 @@ language sql stable security definer set search_path = public as $$
   where p.share_token = p_token;
 $$;
 grant execute on function public.get_shared_project(uuid) to anon, authenticated;
+
+-- ─────────────────────────────────────────────────────────────
+-- content_reports: "report an error" on a result (data-accuracy feedback,
+-- distinct from client_errors/client_events which are JS crash telemetry).
+-- Insert-only from the browser, same pattern as client_errors.
+-- ─────────────────────────────────────────────────────────────
+create table if not exists public.content_reports (
+  id uuid primary key default gen_random_uuid(),
+  created_at timestamptz not null default now(),
+  user_id uuid,
+  town text,
+  message text not null check (char_length(message) <= 2000),
+  analysis jsonb,
+  url text check (char_length(url) <= 500)
+);
+alter table public.content_reports enable row level security;
+drop policy if exists content_reports_insert on public.content_reports;
+create policy content_reports_insert on public.content_reports
+  for insert to anon, authenticated with check (true);
+create index if not exists content_reports_created_idx on public.content_reports (created_at desc);
