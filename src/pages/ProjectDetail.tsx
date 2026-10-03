@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabase'
 import { logClientError } from '../lib/monitor'
+import { useAuth } from '../lib/auth'
 import { Results } from './Analyze'
 import type { Project } from '../lib/types'
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { tier } = useAuth()
   const [project, setProject] = useState<Project | null | undefined>(undefined)
   const [checked, setChecked] = useState<Set<number>>(new Set())
   const [openMistakes, setOpenMistakes] = useState<Set<number>>(new Set())
@@ -73,19 +75,137 @@ export default function ProjectDetail() {
             </Link>
           </div>
         ) : (
-          <Results
-            analysis={project.ai_analysis}
-            town={project.town}
-            checked={checked}
-            onToggleStep={(n) => toggleInSet(setChecked, n)}
-            openMistakes={openMistakes}
-            openTips={openTips}
-            onToggleMistake={(n) => toggleInSet(setOpenMistakes, n)}
-            onToggleTip={(n) => toggleInSet(setOpenTips, n)}
-            onReset={() => navigate('/analyze')}
-          />
+          <div className="space-y-6">
+            <ShareControl tier={tier} project={project} onUpdate={setProject} />
+            <Results
+              analysis={project.ai_analysis}
+              town={project.town}
+              checked={checked}
+              onToggleStep={(n) => toggleInSet(setChecked, n)}
+              openMistakes={openMistakes}
+              openTips={openTips}
+              onToggleMistake={(n) => toggleInSet(setOpenMistakes, n)}
+              onToggleTip={(n) => toggleInSet(setOpenTips, n)}
+              onReset={() => navigate('/analyze')}
+            />
+          </div>
         )}
       </main>
+    </div>
+  )
+}
+
+/**
+ * Contractor differentiator: a public, read-only link to this exact report
+ * (view at /share/:token, see SharedReport.tsx). Enabling is gated
+ * server-side by a trigger on `projects` (enforce_project_share_gate) — the
+ * tier check here only controls what the UI offers, not the real gate.
+ */
+function ShareControl({
+  tier,
+  project,
+  onUpdate,
+}: {
+  tier: 'free' | 'pro' | 'contractor'
+  project: Project
+  onUpdate: (p: Project) => void
+}) {
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [copied, setCopied] = useState(false)
+
+  if (tier !== 'contractor') {
+    return (
+      <div className="rounded-xl border border-dashed border-line bg-slate-50 p-4 text-sm text-ink-muted print:hidden">
+        <span className="font-medium text-ink">Shareable report links</span> are a Contractor
+        feature — send homeowners a read-only link to this exact report, no account needed.{' '}
+        <Link to="/pricing" className="font-semibold text-primary underline">
+          Upgrade to Contractor
+        </Link>
+      </div>
+    )
+  }
+
+  const shareUrl = project.share_token
+    ? `${window.location.origin}/share/${project.share_token}`
+    : null
+
+  const setSharing = async (token: string | null) => {
+    setBusy(true)
+    setError(null)
+    const { data, error: err } = await supabase
+      .from('projects')
+      .update({ share_token: token, shared_at: token ? new Date().toISOString() : null })
+      .eq('id', project.id)
+      .select()
+      .single()
+    setBusy(false)
+    if (err || !data) {
+      setError(
+        token
+          ? 'Could not enable sharing. Please try again.'
+          : 'Could not turn off sharing. Please try again.'
+      )
+      logClientError('project_share_toggle_failed', err)
+      return
+    }
+    onUpdate(data as Project)
+  }
+
+  const copy = async () => {
+    if (!shareUrl) return
+    try {
+      await navigator.clipboard.writeText(shareUrl)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // clipboard permission denied — the URL is still visible to copy manually
+    }
+  }
+
+  return (
+    <div className="rounded-xl border border-line bg-white p-4 shadow-card print:hidden">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <span className="font-medium text-ink">Shareable report link</span>
+          <p className="mt-0.5 text-sm text-ink-muted">
+            {shareUrl
+              ? 'Anyone with this link can view a read-only copy of this report — no account needed.'
+              : 'Send homeowners a read-only link to this exact report.'}
+          </p>
+        </div>
+        {shareUrl ? (
+          <div className="flex items-center gap-3">
+            <button
+              onClick={copy}
+              className="btn-secondary border-primary text-primary hover:bg-blue-50"
+            >
+              {copied ? 'Copied!' : 'Copy link'}
+            </button>
+            <button
+              onClick={() => setSharing(null)}
+              disabled={busy}
+              className="text-sm font-medium text-ink-muted hover:text-error transition disabled:opacity-60"
+            >
+              Turn off
+            </button>
+          </div>
+        ) : (
+          <button onClick={() => setSharing(crypto.randomUUID())} disabled={busy} className="btn-primary">
+            {busy ? 'Enabling…' : 'Enable share link'}
+          </button>
+        )}
+      </div>
+      {shareUrl && (
+        <p className="mt-3 truncate rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          {shareUrl}
+        </p>
+      )}
+      {error && (
+        <p className="mt-2 text-xs text-error" role="alert">
+          {error}
+        </p>
+      )}
     </div>
   )
 }

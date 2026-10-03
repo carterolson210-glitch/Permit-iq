@@ -485,3 +485,51 @@ create policy analytics_events_insert on public.analytics_events
   for insert to anon, authenticated with check (true);
 create index if not exists analytics_events_event_created_idx
   on public.analytics_events (event, created_at desc);
+
+-- ─────────────────────────────────────────────────────────────
+-- Shareable branded reports (Contractor differentiator): a public,
+-- read-only link for a saved project, gated to the Contractor tier.
+-- Enforced at the database level (not just hidden in the UI) so a Pro
+-- account can't just write share_token directly via the client.
+-- ─────────────────────────────────────────────────────────────
+alter table public.projects add column if not exists share_token uuid unique;
+alter table public.projects add column if not exists shared_at timestamptz;
+
+create or replace function public.enforce_project_share_gate()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_plan text;
+begin
+  -- Disabling a share, or any update that leaves share_token unchanged, is
+  -- always allowed — only newly setting/rolling a token is gated.
+  if new.share_token is null or new.share_token = old.share_token then
+    return new;
+  end if;
+  select plan into v_plan from public.users where id = new.user_id;
+  if v_plan not in ('contractor', 'firm') then
+    raise exception 'Shareable report links are a Contractor feature.';
+  end if;
+  return new;
+end $$;
+
+drop trigger if exists projects_share_gate on public.projects;
+create trigger projects_share_gate before update on public.projects
+  for each row execute function public.enforce_project_share_gate();
+
+-- Public read for a shared report by its (unguessable, random) token only —
+-- never a listing, so a token can't be used to enumerate other shares.
+create or replace function public.get_shared_project(p_token uuid)
+returns jsonb
+language sql stable security definer set search_path = public as $$
+  select jsonb_build_object(
+    'title', p.title,
+    'town', p.town,
+    'category', p.category,
+    'ai_analysis', p.ai_analysis,
+    'created_at', p.created_at,
+    'shared_at', p.shared_at
+  )
+  from public.projects p
+  where p.share_token = p_token;
+$$;
+grant execute on function public.get_shared_project(uuid) to anon, authenticated;

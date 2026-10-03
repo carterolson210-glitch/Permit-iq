@@ -284,7 +284,7 @@ export default function Landing() {
                 <li className="flex gap-2"><Check /> Everything in Pro</li>
                 <li className="flex gap-2"><Check /> Multi-project dashboard</li>
                 <li className="flex gap-2"><Check /> Up to 5 team seats</li>
-                <li className="flex gap-2"><Check /> Client-shareable branded reports</li>
+                <li className="flex gap-2"><Check /> Shareable report links for clients</li>
                 <li className="flex gap-2"><Check /> Permit deadline reminders</li>
               </ul>
               <button

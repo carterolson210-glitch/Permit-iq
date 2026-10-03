@@ -86,6 +86,21 @@ export interface Project {
   notes: string | null
   created_at: string
   updated_at: string
+  /** Set once a Contractor enables a public share link; null when unshared. */
+  share_token: string | null
+  shared_at: string | null
+}
+
+/** Shape returned by the public get_shared_project RPC — deliberately a
+ *  subset of Project (no user_id/id/status/notes) so a share link can never
+ *  leak more than the report itself. */
+export interface SharedProject {
+  title: string
+  town: string
+  category: string | null
+  ai_analysis: PermitAnalysis
+  created_at: string
+  shared_at: string
 }
 
 export interface ChecklistItem {

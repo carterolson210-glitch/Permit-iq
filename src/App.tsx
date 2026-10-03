@@ -20,6 +20,7 @@ import Pricing from './pages/Pricing'
 import Checkout from './pages/Checkout'
 import Projects from './pages/Projects'
 import ProjectDetail from './pages/ProjectDetail'
+import SharedReport from './pages/SharedReport'
 import HowWeVerify from './pages/HowWeVerify'
 import ErrorBoundary from './components/ErrorBoundary'
 import GraceBanner from './components/GraceBanner'
@@ -133,6 +134,14 @@ function AnimatedRoutes() {
                 <ProjectDetail />
               </PageTransition>
             </RequireAuth>
+          }
+        />
+        <Route
+          path="/share/:token"
+          element={
+            <PageTransition>
+              <SharedReport />
+            </PageTransition>
           }
         />
         <Route
