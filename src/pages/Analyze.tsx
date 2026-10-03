@@ -165,16 +165,37 @@ export default function Analyze() {
   ) => {
     if (!isPaid || !user) return
     try {
-      await supabase.from('projects').insert({
-        user_id: user.id,
-        title: analysisToSave.project_summary?.slice(0, 120) || `${savedCategory || 'Permit scan'} — ${savedTown}`,
-        description: savedDescription || analysisToSave.project_summary || savedTown,
-        town: savedTown,
-        category: savedCategory || null,
-        square_footage: savedSqft,
-        project_value: savedValue,
-        ai_analysis: analysisToSave,
-      })
+      const { data: project, error } = await supabase
+        .from('projects')
+        .insert({
+          user_id: user.id,
+          title: analysisToSave.project_summary?.slice(0, 120) || `${savedCategory || 'Permit scan'} — ${savedTown}`,
+          description: savedDescription || analysisToSave.project_summary || savedTown,
+          town: savedTown,
+          category: savedCategory || null,
+          square_footage: savedSqft,
+          project_value: savedValue,
+          ai_analysis: analysisToSave,
+        })
+        .select('id')
+        .single()
+      if (error || !project) throw error
+      // Seed checklist_items so progress made later from /projects/:id
+      // survives a reload — the fresh-scan view here still tracks checks
+      // in local state only, since the project row (and its item ids)
+      // don't exist until this insert resolves.
+      if (analysisToSave.checklist?.length) {
+        await supabase.from('checklist_items').insert(
+          analysisToSave.checklist.map((s) => ({
+            project_id: project.id,
+            step_number: s.step_number,
+            action: s.action,
+            details: s.details,
+            who: s.who_does_this,
+            estimated_time: s.estimated_time,
+          }))
+        )
+      }
     } catch (e) {
       logClientError('project_save_failed', e)
     }

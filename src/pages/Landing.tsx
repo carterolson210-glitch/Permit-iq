@@ -27,6 +27,15 @@ export default function Landing() {
 
   useEffect(() => {
     track('landing_view')
+    // Stash a referral code until signup, where auth.tsx redeems it via
+    // the redeem_referral RPC (can't attribute it until there's an
+    // account — this visit might be well before that happens).
+    try {
+      const ref = new URLSearchParams(window.location.search).get('ref')
+      if (ref) localStorage.setItem('piq_ref_code', ref)
+    } catch {
+      // ignore
+    }
   }, [])
 
   const handleSubmit = () => {

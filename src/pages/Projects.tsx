@@ -16,8 +16,46 @@ function formatDate(iso: string): string {
   })
 }
 
+/** Surfaces the referral_code every account gets on signup (previously
+ *  generated but never shown anywhere). Redemption on the other end is
+ *  handled by auth.tsx's redeem_referral call. */
+function ReferralCard({ code }: { code: string }) {
+  const [copied, setCopied] = useState(false)
+  const link = `${window.location.origin}/?ref=${code}`
+
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(link)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // clipboard permission denied — the link is still visible to copy manually
+    }
+  }
+
+  return (
+    <div className="rounded-2xl border border-line bg-white p-5 shadow-card">
+      <h2 className="text-sm font-semibold text-ink">Refer a friend</h2>
+      <p className="mt-1 text-sm text-ink-muted">
+        Share your link — when someone you refer subscribes, it's tied back to you.
+      </p>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <code className="min-w-0 flex-1 truncate rounded-lg bg-slate-50 px-3 py-2 text-xs text-slate-600">
+          {link}
+        </code>
+        <button
+          onClick={copy}
+          className="btn-secondary flex-none border-primary text-primary hover:bg-blue-50"
+        >
+          {copied ? 'Copied!' : 'Copy link'}
+        </button>
+      </div>
+    </div>
+  )
+}
+
 export default function Projects() {
-  const { isPaid, profileLoading } = useAuth()
+  const { isPaid, profileLoading, profile } = useAuth()
   const [projects, setProjects] = useState<Project[] | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -66,6 +104,12 @@ export default function Projects() {
           <motion.p variants={fadeUp} className="mt-2 text-ink-muted">
             Every scan you run is saved here so you can come back to it later.
           </motion.p>
+
+          {profile?.referral_code && (
+            <motion.div variants={fadeUp} className="mt-6">
+              <ReferralCard code={profile.referral_code} />
+            </motion.div>
+          )}
 
           {profileLoading ? (
             <motion.div variants={fadeUp} className="mt-8 animate-pulse space-y-3">

@@ -4,13 +4,17 @@ import { supabase } from '../lib/supabase'
 import { logClientError } from '../lib/monitor'
 import { useAuth } from '../lib/auth'
 import { Results } from './Analyze'
-import type { Project } from '../lib/types'
+import type { ChecklistItem, Project } from '../lib/types'
 
 export default function ProjectDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const { tier } = useAuth()
   const [project, setProject] = useState<Project | null | undefined>(undefined)
+  // Keyed by step_number so toggling can look up each item's id to persist
+  // against. Empty for projects saved before checklist persistence shipped
+  // — toggling then just falls back to local-only state, same as before.
+  const [checklistItems, setChecklistItems] = useState<Map<number, ChecklistItem>>(new Map())
   const [checked, setChecked] = useState<Set<number>>(new Set())
   const [openMistakes, setOpenMistakes] = useState<Set<number>>(new Set())
   const [openTips, setOpenTips] = useState<Set<number>>(new Set())
@@ -28,10 +32,39 @@ export default function ProjectDetail() {
         if (error) logClientError('project_detail_load_failed', error)
         setProject((data as Project | null) ?? null)
       })
+    supabase
+      .from('checklist_items')
+      .select('*')
+      .eq('project_id', id)
+      .order('step_number')
+      .then(({ data, error }) => {
+        if (cancelled) return
+        if (error) {
+          logClientError('checklist_items_load_failed', error)
+          return
+        }
+        const items = (data ?? []) as ChecklistItem[]
+        setChecklistItems(new Map(items.map((i) => [i.step_number, i])))
+        setChecked(new Set(items.filter((i) => i.completed).map((i) => i.step_number)))
+      })
     return () => {
       cancelled = true
     }
   }, [id])
+
+  const toggleChecklistStep = (n: number) => {
+    const wasChecked = checked.has(n)
+    toggleInSet(setChecked, n)
+    const item = checklistItems.get(n)
+    if (!item) return // pre-persistence project — local-only, as before
+    void supabase
+      .from('checklist_items')
+      .update({ completed: !wasChecked, completed_at: !wasChecked ? new Date().toISOString() : null })
+      .eq('id', item.id)
+      .then(({ error }) => {
+        if (error) logClientError('checklist_item_update_failed', error)
+      })
+  }
 
   const toggleInSet = (
     setter: React.Dispatch<React.SetStateAction<Set<number>>>,
@@ -81,7 +114,7 @@ export default function ProjectDetail() {
               analysis={project.ai_analysis}
               town={project.town}
               checked={checked}
-              onToggleStep={(n) => toggleInSet(setChecked, n)}
+              onToggleStep={toggleChecklistStep}
               openMistakes={openMistakes}
               openTips={openTips}
               onToggleMistake={(n) => toggleInSet(setOpenMistakes, n)}

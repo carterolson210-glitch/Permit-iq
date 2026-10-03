@@ -89,6 +89,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     fetchProfile(user.id).finally(() => {
       if (!cancelled) setProfileLoading(false)
     })
+    // Redeem a pending referral code, if Landing.tsx stashed one before
+    // this login/signup. The RPC is a no-op past the first successful
+    // call for this user, so firing it on every login is harmless — but
+    // the code is single-use from the client's side regardless, cleared
+    // immediately so a failed attempt isn't retried indefinitely.
+    try {
+      const refCode = localStorage.getItem('piq_ref_code')
+      if (refCode) {
+        localStorage.removeItem('piq_ref_code')
+        void supabase.rpc('redeem_referral', { p_code: refCode })
+      }
+    } catch {
+      // ignore
+    }
     return () => {
       cancelled = true
     }

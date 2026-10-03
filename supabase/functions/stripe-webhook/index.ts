@@ -136,7 +136,7 @@ Deno.serve(async (req: Request) => {
           }
           await admin.from('users').update(update).eq('stripe_customer_id', customerId)
         } else if (status === 'past_due' || status === 'unpaid') {
-          await startGrace(admin, customerId, status)
+          await startGrace(admin, customerId, status, resendKey)
         } else if (status === 'canceled') {
           await downgrade(admin, customerId)
         }
@@ -152,7 +152,7 @@ Deno.serve(async (req: Request) => {
         const invoice = event.data.object
         // Only subscription renewals start a grace period.
         if (invoice.subscription || invoice.parent?.subscription_details) {
-          await startGrace(admin, invoice.customer, 'past_due')
+          await startGrace(admin, invoice.customer, 'past_due', resendKey)
         }
         break
       }
@@ -207,23 +207,48 @@ async function logEvent(
 async function startGrace(
   admin: ReturnType<typeof createClient>,
   customerId: string,
-  status: string
+  status: string,
+  resendKey: string | undefined
 ) {
   const { data: user } = await admin
     .from('users')
-    .select('id, grace_until')
+    .select('id, email, grace_until')
     .eq('stripe_customer_id', customerId)
     .maybeSingle()
   if (!user) return
   const existing = user.grace_until ? new Date(user.grace_until).getTime() : 0
+  const isNewGraceWindow = existing < Date.now()
   const update: Record<string, unknown> = { subscription_status: status }
-  if (existing < Date.now()) {
+  if (isNewGraceWindow) {
     // Don't extend an already-running grace window on repeated retries.
     update.grace_until = new Date(
       Date.now() + GRACE_DAYS * 24 * 3600 * 1000
     ).toISOString()
   }
   await admin.from('users').update(update).eq('id', user.id)
+  // Only email once per grace window, not on every Stripe retry within it.
+  if (isNewGraceWindow && resendKey && user.email) {
+    await sendPaymentFailedEmail(resendKey, user.email)
+  }
+}
+
+async function sendPaymentFailedEmail(apiKey: string, to: string) {
+  const appUrl = Deno.env.get('APP_URL') ?? 'https://permit-iq-rho.vercel.app'
+  await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: 'PermitIQ <hello@permitiq.app>',
+      to,
+      subject: "Your PermitIQ payment didn't go through",
+      html: `<p>Your last payment for PermitIQ didn't go through.</p>
+<p>Your plan stays active for ${GRACE_DAYS} days while we retry — update your card from the billing portal to avoid losing access.</p>
+<p><a href="${appUrl}/analyze" style="background:#1e40af;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;display:inline-block">Update payment method →</a></p>`,
+    }),
+  })
 }
 
 async function verifyStripeSignature(

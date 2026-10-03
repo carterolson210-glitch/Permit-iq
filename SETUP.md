@@ -65,7 +65,25 @@ permit-iq-1gzx.vercel.app: embedded form → 4242 card payment → in-page
 success → webhook set plan=pro/active → cancel → webhook downgraded to free.
 Going live = create live-mode products/prices + webhook endpoint, swap the
 sk/pk keys and the six secrets — no code changes.
-| `RESEND_API_KEY` | stripe-webhook, subscribe-email (transactional email) | ❌ optional — emails silently skipped without it |
+| `RESEND_API_KEY` | stripe-webhook, subscribe-email, re-engagement-email (transactional email) | ❌ optional — emails silently skipped without it |
+| `CRON_SECRET` | re-engagement-email | ❌ needed before scheduling re-engagement emails — any random string, checked as a bearer token so the function can't be triggered by anyone else |
+
+## Scheduling the re-engagement email
+
+`re-engagement-email` is not called from the app — it needs an external
+trigger on a schedule (e.g. daily):
+
+1. Set `CRON_SECRET` to a random string in the function's secrets.
+2. Point a scheduler at it with that secret as a bearer token, either:
+   - Supabase's own pg_cron + pg_net (`select cron.schedule(...)` calling
+     the function URL via `net.http_post`), or
+   - An external scheduler (GitHub Actions on a `schedule:` trigger,
+     Vercel Cron, etc.) doing
+     `curl -X POST -H "Authorization: Bearer $CRON_SECRET" https://epuxbohyvkjodflikeby.supabase.co/functions/v1/re-engagement-email`.
+
+Without this, failed-payment and welcome emails still work (they're
+triggered by webhook/signup events) — only the "come back, you have free
+scans left" nudge needs the schedule wired up.
 
 ## Stripe setup (one-time, ~10 minutes)
 

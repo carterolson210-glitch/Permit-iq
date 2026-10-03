@@ -406,6 +406,38 @@ alter table public.anon_scans enable row level security;
 -- Track the one-time welcome email
 alter table public.users add column if not exists welcomed_at timestamptz;
 
+-- Re-engagement email cooldown (set by the re-engagement-email function).
+alter table public.users add column if not exists last_reengagement_sent_at timestamptz;
+
+-- ─────────────────────────────────────────────────────────────
+-- Referral redemption: associates a new signup with whoever's link they
+-- arrived through (?ref=CODE, captured client-side then redeemed here).
+-- Security definer because the caller needs to resolve another user's id
+-- from their referral_code, which users_self_select's RLS would otherwise
+-- block; narrowly scoped to the caller's own referred_by + one referrals
+-- row, and a no-op past the first successful call.
+-- ─────────────────────────────────────────────────────────────
+create or replace function public.redeem_referral(p_code text)
+returns void
+language plpgsql security definer set search_path = public as $$
+declare
+  v_referrer uuid;
+  v_updated int;
+begin
+  if p_code is null or p_code = '' then return; end if;
+  select id into v_referrer from public.users where referral_code = p_code;
+  if v_referrer is null or v_referrer = auth.uid() then return; end if;
+
+  update public.users set referred_by = v_referrer
+    where id = auth.uid() and referred_by is null;
+  get diagnostics v_updated = row_count;
+  if v_updated = 0 then return; end if;
+
+  insert into public.referrals (referrer_id, referee_email, referee_id, signed_up)
+  select v_referrer, email, id, true from public.users where id = auth.uid();
+end $$;
+grant execute on function public.redeem_referral(text) to authenticated;
+
 -- ─────────────────────────────────────────────────────────────
 -- Public aggregate stats (social proof). Exposes ONLY counts — never rows.
 -- The UI hides the counter below a threshold; numbers are always real.

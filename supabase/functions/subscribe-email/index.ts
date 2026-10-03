@@ -38,6 +38,7 @@ Deno.serve(async (req: Request) => {
 
     const resendKey = Deno.env.get('RESEND_API_KEY')
     if (resendKey) {
+      const appUrl = Deno.env.get('APP_URL') ?? 'https://permit-iq-rho.vercel.app'
       await fetch('https://api.resend.com/emails', {
         method: 'POST',
         headers: {
@@ -48,7 +49,7 @@ Deno.serve(async (req: Request) => {
           from: 'PermitIQ <hello@permitiq.app>',
           to: email,
           subject: 'Your free MA Permit Checklist',
-          html: welcomeHtml(),
+          html: welcomeHtml(appUrl),
         }),
       })
     }
@@ -66,13 +67,13 @@ function json(payload: unknown, status: number) {
   })
 }
 
-function welcomeHtml() {
+function welcomeHtml(appUrl: string) {
   return `
   <div style="font-family:Inter,system-ui,sans-serif;line-height:1.5;color:#0f172a">
     <h1 style="color:#1e40af">Your free MA Permit Checklist</h1>
     <p>Thanks for grabbing the PermitIQ Massachusetts Permit Checklist.</p>
-    <p>Open it here: <a href="https://permitiq.app/checklist.pdf">Download PDF</a></p>
+    <p>Open it here: <a href="${appUrl}/ma-permit-mistakes-checklist.pdf">Download PDF</a></p>
     <p>Need help with a specific project?</p>
-    <p><a href="https://permitiq.app/analyze" style="background:#1e40af;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;display:inline-block">Analyze my project →</a></p>
+    <p><a href="${appUrl}/analyze" style="background:#1e40af;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;display:inline-block">Analyze my project →</a></p>
   </div>`
 }
