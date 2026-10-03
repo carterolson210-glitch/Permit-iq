@@ -27,11 +27,17 @@ export default function ZoningOverlay() {
   // Slight per-layer drift so the stack feels alive, not rigid.
   const phases = useMemo(() => LAYERS.map((_, i) => i * 1.7), [])
 
-  useFrame(({ clock }) => {
+  // One shared backbuffer capture for all 3 glass layers. Without this,
+  // each MeshTransmissionMaterial instance does its own full extra scene
+  // render every frame (that's what `buffer` opts out of) — sharing one
+  // cuts that 3x cost down to 1x for the ~20% of scroll this is mounted.
+  const fbo = useFBO(128)
+
+  useFrame((state) => {
     const g = group.current
     if (!g) return
     const p = scrollState.smooth
-    const t = clock.elapsedTime
+    const t = state.clock.elapsedTime
 
     // in as the map rises (scene 3), out as scene 4 hands off to the report
     const enter = seg(p, SCENES.s3.a + 0.06, SCENES.s3.a + 0.2)
@@ -49,6 +55,12 @@ export default function ZoningOverlay() {
         WORCESTER.y + LAYERS[i].y * stagger + Math.sin(t * 0.8 + phases[i]) * 0.03 * s + exit * 1.4
       layer.rotation.z = (1 - stagger) * 0.3
     })
+
+    g.visible = false
+    state.gl.setRenderTarget(fbo)
+    state.gl.render(state.scene, state.camera)
+    state.gl.setRenderTarget(null)
+    g.visible = true
   })
 
   return (
@@ -63,6 +75,7 @@ export default function ZoningOverlay() {
             rotation={[-Math.PI / 2, 0, 0]}
           >
             <MeshTransmissionMaterial
+              buffer={fbo.texture}
               transmission={1}
               thickness={0.35}
               roughness={0.1}
@@ -76,7 +89,10 @@ export default function ZoningOverlay() {
               background={new THREE.Color('#eef4ff')}
               transparent
               samples={4}
-              resolution={128}
+              // Unused now that `buffer` is set (see fbo above) — kept small
+              // just to bound the otherwise-dead per-instance FBO allocation,
+              // which defaults to full canvas resolution if omitted.
+              resolution={64}
             />
           </RoundedBox>
           {/* thin bright edge so the plane reads as a discrete overlay */}

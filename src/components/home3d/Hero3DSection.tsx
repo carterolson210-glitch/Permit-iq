@@ -86,7 +86,7 @@ export default function Hero3DSection() {
     <div ref={wrap} className="relative h-screen overflow-hidden bg-slate-50">
       <Canvas
         frameloop={active ? 'always' : 'never'}
-        dpr={[1, 1.75]}
+        dpr={[1, 1.5]}
         camera={{ fov: 38, position: [0, 0.55, 9.2] }}
         gl={{ antialias: true, powerPreference: 'high-performance' }}
         className="!absolute inset-0"
