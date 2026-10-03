@@ -326,3 +326,90 @@ applies:
 
 I'll keep going in this order and commit after each phase per the original
 instructions.
+
+---
+
+## Final summary (all phases complete)
+
+**What changed**, one commit per phase (git log has the full detail):
+
+- **Phase 0**: audit; corrected the Next.js/Grok framing to the actual
+  Vite SPA + Supabase stack; found most of Phases 1-4 already shipped and
+  trimmed the remaining plan accordingly.
+- **Phase 1**: fixed the 2 pre-existing lint errors; added first-party
+  funnel analytics (`analytics_events` table — `landing_view`,
+  `scan_started`, `scan_completed`, `paywall_shown`, `checkout_started`,
+  `checkout_completed` from the browser; `upgrade`/`cancel` from
+  `stripe-webhook`, the only reliable source of truth for those).
+- **Phase 2**: Contractor's first real differentiator — shareable report
+  links (`/share/:token`), gated at the database level (a trigger, not
+  just the UI) so Pro can't self-enable it.
+- **Phase 3**: skipped — homepage was already rebuilt to spec.
+- **Phase 4**: "report an error" link on every result surface
+  (`/analyze`, `/projects/:id`, `/share/:token`).
+- **Phase 5**: SEO — build-time `sitemap.xml`/`robots.txt` generator,
+  per-page `noindex` for the 321 unverified towns vs `index` + FAQPage
+  JSON-LD for the 30 verified ones, canonical tags, a "coming soon" email
+  capture replacing boilerplate copy on unverified towns, and a standalone
+  `/coverage` page.
+- **Phase 6**: checklist progress now persists (`checklist_items`); fixed
+  a dead welcome-email link; added a payment-failed email and a
+  re-engagement email; wired the referral loop end-to-end (capture →
+  redeem → surface on `/projects`) — the code existed to generate referral
+  codes but nothing ever showed one to a user.
+
+**What still needs manual setup** (none of this can be done from here):
+
+1. **Deploy `schema.sql`** to the live Supabase project — everything built
+   this round (analytics, share links, content reports, referrals,
+   re-engagement cooldown) degrades gracefully without it (verified live
+   in a browser against the real project — clean fallback UI, no crashes)
+   but won't actually persist anything until it's run.
+2. **Redeploy edge functions**: `stripe-webhook` and `subscribe-email`
+   changed; `re-engagement-email` is new and needs its first deploy.
+3. **Set `CRON_SECRET`** and wire an external scheduler (pg_cron or
+   GitHub Actions/Vercel Cron) to call `re-engagement-email` on a
+   schedule — see SETUP.md. Nothing else depends on this.
+4. **Stripe is still test-mode** (pre-existing, not new this round) —
+   going live means live-mode products/prices, a live webhook endpoint,
+   and swapping the six `STRIPE_*` secrets.
+5. No new `VITE_`-prefixed env vars. `SITE_URL` is an optional build-time
+   var (sitemap URLs) with a working default.
+6. Housekeeping: browser-testing the coming-soon capture inserted one real
+   row (`test@example.com`, source `town_coming_soon:natick-ma`) into the
+   live `email_subscribers` table — harmless, but worth knowing it's there.
+7. Supabase's free tier pauses after ~1 week idle — restore via the
+   Management API if a deploy suddenly 500s on every DB call.
+
+**Honest limitations:**
+
+- SEO signals (`noindex`, canonical, JSON-LD) are set client-side since
+  this is an unchanged client-rendered SPA with no SSR — robust for
+  Google (whose crawler executes JS), weaker for crawlers with less JS
+  support. A real fix means SSR/SSG, out of scope for this round.
+- Referral redemption is a best-effort client-side RPC call on login,
+  matching the fire-and-forget style already used elsewhere in this
+  codebase (e.g. `saveProject`) — a closed tab mid-redemption loses the
+  attribution. Acceptable for a first cut, not bulletproof.
+- Contractor's "team seats" and "deadline reminders" are still genuinely
+  unbuilt — deliberately deprioritized below shareable links, which had
+  more revenue leverage for the same effort.
+
+**Top 3 next revenue experiments:**
+
+1. Funnel analytics are live now — instrument the `paywall_shown` →
+   `checkout_started` conversion rate and start A/B testing the
+   locked-preview copy/teaser against it. This was previously impossible
+   to measure at all.
+2. Push hand-verified towns past 30. Town-to-town fee variance is the
+   homepage's core "why not just ask ChatGPT" argument, and — new as of
+   Phase 5 — every newly-verified town is also a newly-indexable SEO page.
+   Verifying more towns now compounds conversion and organic growth at
+   the same time, rather than being purely a trust-building cost.
+3. Turn the Contractor share-link feature into a tracked acquisition
+   channel, not just a retention perk: log share-link views as a funnel
+   event, and give Contractor subscribers a visible reason to actually
+   use it (e.g. "3 homeowners viewed your shared reports this month").
+   Right now nothing nudges a Contractor who upgraded to actually start
+   sharing links, which is where the viral loop the brief wants would
+   come from.
