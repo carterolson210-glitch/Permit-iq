@@ -12,6 +12,7 @@ function canUseWebGL(): boolean {
   }
 }
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function use3DHero(): boolean {
   return useMemo(() => {
     if (typeof window === 'undefined') return false

@@ -9,6 +9,7 @@ const TESTIMONIALS: { quote: string; name: string; detail: string }[] = []
 // The scans counter only appears once there is real volume behind it.
 const COUNTER_THRESHOLD = 100
 
+// eslint-disable-next-line react-refresh/only-export-components
 export function useScanCount(): number | null {
   const [count, setCount] = useState<number | null>(null)
   useEffect(() => {
