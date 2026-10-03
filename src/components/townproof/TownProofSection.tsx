@@ -138,7 +138,7 @@ export default function TownProofSection() {
                   </p>
                   <Link
                     to="/analyze"
-                    className="mt-6 inline-flex items-center rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-blue-800 transition"
+                    className="mt-6 inline-flex items-center rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white shadow transition hover:scale-[1.02] hover:bg-blue-800 active:scale-[0.98]"
                   >
                     Scan a {unverifiedPick} project free
                   </Link>
@@ -201,13 +201,13 @@ export default function TownProofSection() {
                   <div className="mt-6 flex flex-wrap items-center gap-3">
                     <Link
                       to={`/permits/${picked.slug}`}
-                      className="inline-flex items-center rounded-lg border border-blue-700 px-4 py-2 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition"
+                      className="inline-flex items-center rounded-lg border border-blue-700 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:scale-[1.02] hover:bg-blue-50 active:scale-[0.98]"
                     >
                       Full {picked.name} permit guide
                     </Link>
                     <Link
                       to="/analyze"
-                      className="inline-flex items-center rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow hover:bg-blue-800 transition"
+                      className="inline-flex items-center rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow transition hover:scale-[1.02] hover:bg-blue-800 active:scale-[0.98]"
                     >
                       Scan my {picked.name} project
                     </Link>

@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { VERIFIED_TOWN_COUNT } from '../../data/townPermits'
 import { DEMO_TOWN_SLUG } from '../../data/demoReport'
+import { EASE } from '../../lib/motionVariants'
 
 function CheckDot() {
   return (
@@ -45,7 +46,7 @@ export function WhatYouGet() {
     },
   ]
   return (
-    <section id="what-you-get" className="bg-slate-50">
+    <section id="what-you-get" className="scroll-mt-20 bg-slate-50">
       <div className="mx-auto max-w-6xl px-4 sm:px-6 py-20">
         <div className="mx-auto max-w-2xl text-center">
           <h2 className="text-3xl sm:text-4xl font-bold text-slate-900">What’s in a report</h2>
@@ -61,7 +62,8 @@ export function WhatYouGet() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-60px' }}
               transition={{ duration: 0.4, delay: (i % 3) * 0.08 }}
-              className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+              whileHover={{ y: -4, transition: { duration: 0.25, ease: EASE } }}
+              className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-300 hover:shadow-lift"
             >
               <div className="flex items-start gap-3">
                 <CheckDot />
@@ -120,7 +122,8 @@ export function WhoItsFor() {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, margin: '-60px' }}
               transition={{ duration: 0.4, delay: i * 0.08 }}
-              className="rounded-xl border border-slate-200 bg-slate-50 p-6 shadow-sm"
+              whileHover={{ y: -4, transition: { duration: 0.25, ease: EASE } }}
+              className="rounded-xl border border-slate-200 bg-slate-50 p-6 shadow-sm transition-[background-color,box-shadow] duration-300 hover:bg-white hover:shadow-lift"
             >
               <h3 className="text-lg font-semibold text-blue-700">{r.who}</h3>
               <p className="mt-2 text-sm text-slate-600 leading-relaxed">{r.pain}</p>
@@ -155,7 +158,7 @@ const FAQS: { q: string; a: string }[] = [
 export function HomeFAQ() {
   const [open, setOpen] = useState<number | null>(0)
   return (
-    <section id="faq" className="bg-slate-50">
+    <section id="faq" className="scroll-mt-20 bg-slate-50">
       <div className="mx-auto max-w-3xl px-4 sm:px-6 py-20">
         <h2 className="text-center text-3xl sm:text-4xl font-bold text-slate-900">
           Common questions
@@ -166,16 +169,31 @@ export function HomeFAQ() {
               <button
                 onClick={() => setOpen(open === i ? null : i)}
                 aria-expanded={open === i}
-                className="flex w-full items-center justify-between gap-4 px-6 py-4 text-left text-sm font-semibold text-slate-900 hover:bg-slate-50"
+                className="flex w-full items-center justify-between gap-4 px-6 py-4 text-left text-sm font-semibold text-slate-900 transition-colors hover:bg-slate-50"
               >
                 {faq.q}
-                <span aria-hidden="true" className="text-slate-400">
-                  {open === i ? '−' : '+'}
-                </span>
+                <motion.span
+                  aria-hidden="true"
+                  animate={{ rotate: open === i ? 45 : 0 }}
+                  transition={{ duration: 0.2 }}
+                  className="text-lg leading-none text-slate-400"
+                >
+                  +
+                </motion.span>
               </button>
-              {open === i && (
-                <p className="px-6 pb-5 text-sm leading-relaxed text-slate-600">{faq.a}</p>
-              )}
+              <AnimatePresence initial={false}>
+                {open === i && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: 'auto', opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+                    className="overflow-hidden"
+                  >
+                    <p className="px-6 pb-5 text-sm leading-relaxed text-slate-600">{faq.a}</p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           ))}
         </div>

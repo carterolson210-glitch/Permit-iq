@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { fadeUp, staggerChildren } from '../lib/motionVariants'
 import { checkoutPath } from '../lib/stripe'
 import { annualSavingsLabel, PLAN_DEFS, type Billing, type PlanKey } from '../lib/plans'
@@ -168,7 +168,7 @@ export default function Pricing() {
                 className={`relative flex flex-col rounded-2xl bg-white p-8 ${
                   plan.highlight
                     ? 'border-2 border-primary shadow-lift md:-translate-y-2'
-                    : 'border border-line shadow-card'
+                    : 'card-hover border border-line shadow-card'
                 }`}
               >
                 {plan.highlight && (
@@ -190,13 +190,18 @@ export default function Pricing() {
                   <p className="mt-1 text-xs font-semibold text-accent">{savings}</p>
                 )}
                 {plan.key === 'free' ? (
-                  <Link to="/analyze" className="btn-secondary mt-6 w-full text-center border-primary text-primary hover:bg-blue-50">
+                  <Link to="/analyze" className="btn-secondary mt-6 w-full border-primary text-center text-primary transition hover:scale-[1.02] hover:bg-blue-50 active:scale-[0.98]">
                     {plan.cta}
                   </Link>
                 ) : (
                   <button
                     onClick={() => handleUpgrade(plan.key as PlanKey)}
-                    className={plan.highlight ? 'btn-primary mt-6 w-full' : 'btn-secondary mt-6 w-full border-primary text-primary hover:bg-blue-50'}
+                    className={
+                      (plan.highlight
+                        ? 'btn-primary'
+                        : 'btn-secondary border-primary text-primary hover:bg-blue-50') +
+                      ' mt-6 w-full transition hover:scale-[1.02] active:scale-[0.98]'
+                    }
                   >
                     {plan.cta}
                   </button>
@@ -220,7 +225,7 @@ export default function Pricing() {
             </thead>
             <tbody>
               {COMPARISON.map((row) => (
-                <tr key={row.feature} className="border-b border-line last:border-0 text-center">
+                <tr key={row.feature} className="border-b border-line text-center transition-colors last:border-0 hover:bg-slate-50/80">
                   <th scope="row" className="px-6 py-3.5 text-left text-sm font-medium text-ink-muted">
                     {row.feature}
                   </th>
@@ -245,14 +250,31 @@ export default function Pricing() {
                 <button
                   onClick={() => setOpenFaq(openFaq === i ? null : i)}
                   aria-expanded={openFaq === i}
-                  className="flex w-full items-center justify-between gap-4 px-6 py-4 text-left text-sm font-semibold text-ink hover:bg-slate-50"
+                  className="flex w-full items-center justify-between gap-4 px-6 py-4 text-left text-sm font-semibold text-ink transition-colors hover:bg-slate-50"
                 >
                   {faq.q}
-                  <span aria-hidden="true" className="text-ink-muted">{openFaq === i ? '−' : '+'}</span>
+                  <motion.span
+                    aria-hidden="true"
+                    animate={{ rotate: openFaq === i ? 45 : 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="text-lg leading-none text-ink-muted"
+                  >
+                    +
+                  </motion.span>
                 </button>
-                {openFaq === i && (
-                  <p className="px-6 pb-5 text-sm leading-relaxed text-ink-muted">{faq.a}</p>
-                )}
+                <AnimatePresence initial={false}>
+                  {openFaq === i && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <p className="px-6 pb-5 text-sm leading-relaxed text-ink-muted">{faq.a}</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             ))}
           </div>

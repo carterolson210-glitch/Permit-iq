@@ -62,7 +62,7 @@ export default function PenaltySection() {
             </h3>
             <ul className="mt-4 space-y-4">
               {REJECTION_REASONS.map((r) => (
-                <li key={r.title} className="rounded-lg border border-slate-200 p-4">
+                <li key={r.title} className="card-hover rounded-lg border border-slate-200 p-4">
                   <div className="text-sm font-semibold text-slate-900">{r.title}</div>
                   <p className="mt-1 text-sm text-slate-600">{r.body}</p>
                 </li>
@@ -87,9 +87,9 @@ export default function PenaltySection() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {withPenalty.map((t) => (
-                    <tr key={t.slug}>
+                    <tr key={t.slug} className="transition-colors hover:bg-slate-50">
                       <td className="px-4 py-3 font-medium text-slate-900">
-                        <Link to={`/permits/${t.slug}`} className="hover:text-blue-700">
+                        <Link to={`/permits/${t.slug}`} className="transition-colors hover:text-blue-700">
                           {t.name}
                         </Link>
                       </td>
@@ -109,7 +109,7 @@ export default function PenaltySection() {
               </p>
               <Link
                 to="/analyze"
-                className="mt-3 inline-flex items-center rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-blue-800 transition"
+                className="mt-3 inline-flex items-center rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white shadow transition hover:scale-[1.02] hover:bg-blue-800 active:scale-[0.98]"
               >
                 Scan my project free
               </Link>

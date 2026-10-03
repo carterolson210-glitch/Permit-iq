@@ -32,7 +32,7 @@ export default function CompareSection() {
       </div>
 
       <div className="mt-12 grid gap-6 md:grid-cols-2">
-        <div className="rounded-2xl border border-slate-200 bg-slate-50 p-6">
+        <div className="card-hover rounded-2xl border border-slate-200 bg-slate-50 p-6">
           <div className="text-xs font-bold uppercase tracking-wide text-slate-400">
             Generic permit software
           </div>
@@ -49,7 +49,7 @@ export default function CompareSection() {
           </p>
         </div>
 
-        <div className="rounded-2xl border-2 border-blue-700 bg-white p-6 shadow-lg">
+        <div className="card-hover rounded-2xl border-2 border-blue-700 bg-white p-6 shadow-lg">
           <div className="flex items-center justify-between">
             <div className="text-xs font-bold uppercase tracking-wide text-blue-700">
               PermitIQ — Marblehead, MA
@@ -68,7 +68,7 @@ export default function CompareSection() {
           </dl>
           <Link
             to="/analyze"
-            className="mt-6 inline-flex items-center rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white shadow hover:bg-blue-800 transition"
+            className="mt-6 inline-flex items-center rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white shadow transition hover:scale-[1.02] hover:bg-blue-800 active:scale-[0.98]"
           >
             Run this scan on my project
           </Link>

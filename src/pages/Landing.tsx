@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { AnimatePresence, motion } from 'framer-motion'
 import { fadeUp, staggerChildren } from '../lib/motionVariants'
 import { useAuth } from '../lib/auth'
 import { checkoutPath, type PlanKey, type Billing } from '../lib/stripe'
@@ -20,6 +20,9 @@ export default function Landing() {
   const { user } = useAuth()
   const show3D = use3DHero()
   const [projectText, setProjectText] = useState('')
+  const [scrolled, setScrolled] = useState(false)
+  const [heroCtaVisible, setHeroCtaVisible] = useState(true)
+  const heroCtaRef = useRef<HTMLButtonElement | null>(null)
 
   const handleSubmit = () => {
     const params = new URLSearchParams()
@@ -27,6 +30,27 @@ export default function Landing() {
     const qs = params.toString()
     navigate(qs ? `/analyze?${qs}` : '/analyze')
   }
+
+  // Subtle shadow once the page scrolls, so the sticky nav reads as "lifted"
+  // instead of flat-pinned from the very first pixel.
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 8)
+    onScroll()
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => window.removeEventListener('scroll', onScroll)
+  }, [])
+
+  // Mini sticky CTA appears once the real hero button scrolls out of view —
+  // adapts to the 3D vs 2D hero's different heights automatically.
+  useEffect(() => {
+    const el = heroCtaRef.current
+    if (!el) return
+    const observer = new IntersectionObserver(([entry]) => setHeroCtaVisible(entry.isIntersecting), {
+      rootMargin: '-64px 0px 0px 0px',
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [])
 
   // Payment happens on our own /checkout page (embedded Stripe form — no
   // redirect off-site). Signed-out visitors pass through /login and land back.
@@ -36,9 +60,13 @@ export default function Landing() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900">
       {/* NAVBAR */}
-      <header className="sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-slate-200">
+      <header
+        className={`sticky top-0 z-30 bg-white/90 backdrop-blur border-b border-slate-200 transition-shadow duration-300 ${
+          scrolled ? 'shadow-[0_1px_12px_rgba(15,23,42,0.06)]' : ''
+        }`}
+      >
         <nav className="mx-auto max-w-6xl px-4 sm:px-6 h-16 flex items-center justify-between">
-          <a href="#top" className="text-xl sm:text-2xl font-bold text-blue-700">
+          <a href="#top" className="text-xl sm:text-2xl font-bold text-blue-700 transition-opacity hover:opacity-80">
             PermitIQ
           </a>
           <div className="flex items-center gap-4">
@@ -49,15 +77,45 @@ export default function Landing() {
               {user ? 'My scans' : 'Sign in'}
             </Link>
             <motion.button
+              whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
               onClick={handleSubmit}
-              className="inline-flex items-center rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-800 transition"
+              className="inline-flex items-center rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-800"
             >
               Start Free
             </motion.button>
           </div>
         </nav>
       </header>
+
+      {/* MINI STICKY CTA — appears once the real hero CTA scrolls out of
+          view, so intent captured early in the scroll isn't lost by the
+          time someone decides to act. */}
+      <AnimatePresence>
+        {!heroCtaVisible && (
+          <motion.div
+            initial={{ y: -12, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -12, opacity: 0 }}
+            transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+            className="sticky top-16 z-20 border-b border-slate-200 bg-white/95 backdrop-blur shadow-sm"
+          >
+            <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-2.5 sm:px-6">
+              <p className="hidden text-sm font-medium text-slate-700 sm:block">
+                Find every permit your project needs — free to start.
+              </p>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={handleSubmit}
+                className="inline-flex w-full items-center justify-center rounded-md bg-blue-700 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-800 sm:w-auto"
+              >
+                Get my permit checklist — free
+              </motion.button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* HERO — real crawlable <h1>, subhead, primary CTA (the project input),
           trust line, and a sample-report path. Visible above the fold for
@@ -98,9 +156,11 @@ export default function Landing() {
               className="w-full rounded-lg border border-slate-300 bg-white px-4 py-3 text-base shadow-sm placeholder:text-slate-400 focus:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-700/30 resize-none"
             />
             <motion.button
+              ref={heroCtaRef}
+              whileHover={{ scale: 1.015 }}
               whileTap={{ scale: 0.98 }}
               onClick={handleSubmit}
-              className="mt-6 w-full inline-flex items-center justify-center rounded-lg bg-blue-700 px-6 py-3.5 text-base font-semibold text-white shadow hover:bg-blue-800 transition"
+              className="mt-6 w-full inline-flex items-center justify-center rounded-lg bg-blue-700 px-6 py-3.5 text-base font-semibold text-white shadow transition-shadow hover:bg-blue-800 hover:shadow-lift"
             >
               Get my permit checklist — free
             </motion.button>
@@ -149,7 +209,7 @@ export default function Landing() {
       <SocialProof />
 
       {/* PRICING */}
-      <section id="pricing">
+      <section id="pricing" className="scroll-mt-20">
         <div className="mx-auto max-w-6xl px-4 sm:px-6 py-20">
           <div className="text-center max-w-2xl mx-auto">
             <h2 className="text-3xl sm:text-4xl font-bold text-slate-900">Simple, transparent pricing</h2>
@@ -158,7 +218,7 @@ export default function Landing() {
 
           <div className="mt-12 grid gap-6 md:grid-cols-3">
             {/* Free */}
-            <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="card-hover flex flex-col rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
               <h3 className="text-lg font-semibold text-slate-900">Free</h3>
               <div className="mt-4 flex items-baseline gap-1">
                 <span className="text-4xl font-extrabold text-slate-900">$0</span>
@@ -171,14 +231,14 @@ export default function Landing() {
               </ul>
               <Link
                 to="/analyze"
-                className="mt-8 inline-flex items-center justify-center rounded-md border border-blue-700 px-4 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition"
+                className="mt-8 inline-flex items-center justify-center rounded-md border border-blue-700 px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:scale-[1.02] hover:bg-blue-50 active:scale-[0.98]"
               >
                 Start free
               </Link>
             </div>
 
             {/* Pro (most popular) */}
-            <div className="relative flex flex-col rounded-2xl border-2 border-blue-700 bg-white p-8 shadow-lg md:-translate-y-2">
+            <div className="relative flex flex-col rounded-2xl border-2 border-blue-700 bg-white p-8 shadow-lg transition-shadow duration-300 hover:shadow-lift md:-translate-y-2">
               <span className="absolute -top-3 left-1/2 -translate-x-1/2 rounded-full bg-green-600 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-white shadow">
                 Most Popular
               </span>
@@ -199,14 +259,14 @@ export default function Landing() {
               </ul>
               <button
                 onClick={() => handleCheckout('pro', 'monthly')}
-                className="mt-8 inline-flex items-center justify-center rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow hover:bg-blue-800 transition"
+                className="mt-8 inline-flex items-center justify-center rounded-md bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white shadow transition hover:scale-[1.02] hover:bg-blue-800 active:scale-[0.98]"
               >
                 Get Pro
               </button>
             </div>
 
             {/* Contractor */}
-            <div className="flex flex-col rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
+            <div className="card-hover flex flex-col rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">
               <h3 className="text-lg font-semibold text-slate-900">Contractor</h3>
               <div className="mt-4 flex items-baseline gap-1">
                 <span className="text-4xl font-extrabold text-slate-900">$79</span>
@@ -224,7 +284,7 @@ export default function Landing() {
               </ul>
               <button
                 onClick={() => handleCheckout('contractor', 'monthly')}
-                className="mt-8 inline-flex items-center justify-center rounded-md border border-blue-700 px-4 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-50 transition"
+                className="mt-8 inline-flex items-center justify-center rounded-md border border-blue-700 px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:scale-[1.02] hover:bg-blue-50 active:scale-[0.98]"
               >
                 Get Contractor
               </button>
@@ -242,12 +302,12 @@ export default function Landing() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
             <div className="text-xl font-bold text-blue-700">PermitIQ</div>
             <ul className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-slate-600">
-              <li><a href="#what-you-get" className="hover:text-blue-700">What you get</a></li>
-              <li><a href="#pricing" className="hover:text-blue-700">Pricing</a></li>
-              <li><a href="#faq" className="hover:text-blue-700">FAQ</a></li>
-              <li><Link to="/how-we-verify" className="hover:text-blue-700">How we verify</Link></li>
-              <li><Link to="/privacy" className="hover:text-blue-700">Privacy</Link></li>
-              <li><Link to="/terms" className="hover:text-blue-700">Terms</Link></li>
+              <li><a href="#what-you-get" className="transition-colors hover:text-blue-700">What you get</a></li>
+              <li><a href="#pricing" className="transition-colors hover:text-blue-700">Pricing</a></li>
+              <li><a href="#faq" className="transition-colors hover:text-blue-700">FAQ</a></li>
+              <li><Link to="/how-we-verify" className="transition-colors hover:text-blue-700">How we verify</Link></li>
+              <li><Link to="/privacy" className="transition-colors hover:text-blue-700">Privacy</Link></li>
+              <li><Link to="/terms" className="transition-colors hover:text-blue-700">Terms</Link></li>
             </ul>
           </div>
           <div className="mt-8">
@@ -257,7 +317,7 @@ export default function Landing() {
             <ul className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
               {TOWN_PROFILES.map((t) => (
                 <li key={t.slug}>
-                  <Link to={`/permits/${t.slug}`} className="hover:text-blue-700">
+                  <Link to={`/permits/${t.slug}`} className="transition-colors hover:text-blue-700">
                     {t.name}
                   </Link>
                 </li>

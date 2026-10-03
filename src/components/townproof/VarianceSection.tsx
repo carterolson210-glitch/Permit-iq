@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion'
 import { VARIANCE_EXAMPLES } from '../../data/townPermits'
+import { EASE } from '../../lib/motionVariants'
 
 // Concrete town-vs-town contrasts computed from the verified fee schedules —
 // the "generic tools can't do this" proof, with real numbers.
@@ -24,7 +25,8 @@ export default function VarianceSection() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, margin: '-60px' }}
             transition={{ duration: 0.4, delay: i * 0.1 }}
-            className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+            whileHover={{ y: -4, transition: { duration: 0.25, ease: EASE } }}
+            className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm transition-shadow duration-300 hover:shadow-lift"
           >
             <h3 className="text-base font-semibold text-slate-900">{ex.topic}</h3>
             <div className="mt-4 space-y-3 flex-1">
