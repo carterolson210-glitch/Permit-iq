@@ -1,6 +1,6 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
-import { MeshTransmissionMaterial, RoundedBox } from '@react-three/drei'
+import { MeshTransmissionMaterial, RoundedBox, useFBO } from '@react-three/drei'
 import * as THREE from 'three'
 import { scrollState, seg, SCENES } from './scroll'
 

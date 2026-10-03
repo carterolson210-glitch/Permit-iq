@@ -6,6 +6,8 @@ import DocumentScene from './DocumentScene'
 import MassMap from './MassMap'
 import ZoningOverlay from './ZoningOverlay'
 import BlueprintBackdrop from './BlueprintBackdrop'
+import { ScrollGate } from './ScrollGate'
+import { SCENES } from './scroll'
 
 const BG = '#f8fafc' // matches page bg (slate-50) so the canvas blends in
 
@@ -39,20 +41,30 @@ export default function HeroScene() {
       <directionalLight position={[4, 7, 5]} intensity={1.35} color="#ffffff" />
       <ambientLight intensity={0.35} />
 
-      {/* Soft contact shadow grounding the hero document. */}
-      <ContactShadows
-        position={[0, -1.85, 0]}
-        opacity={0.32}
-        scale={12}
-        blur={2.6}
-        far={4}
-        resolution={512}
-        color="#1e293b"
-      />
+      {/* Soft contact shadow grounding the hero document. Mounted only while
+          the document is on screen — ContactShadows renders an extra full
+          scene pass every frame for as long as it exists, whether or not
+          it's visible, so it's only worth paying for during scenes 1-2. */}
+      <ScrollGate from={SCENES.s1.a} to={SCENES.s2.b}>
+        <ContactShadows
+          position={[0, -1.85, 0]}
+          opacity={0.32}
+          scale={12}
+          blur={2.6}
+          far={4}
+          resolution={512}
+          color="#1e293b"
+        />
+      </ScrollGate>
 
       <DocumentScene />
       <MassMap />
-      <ZoningOverlay />
+      {/* Same reasoning as ContactShadows above — MeshTransmissionMaterial
+          (used by the three glass layers inside) renders a full extra scene
+          pass per instance, per frame, unconditionally while mounted. */}
+      <ScrollGate from={SCENES.s3.a} to={SCENES.s4.a + 0.2}>
+        <ZoningOverlay />
+      </ScrollGate>
       <BlueprintBackdrop />
     </>
   )
