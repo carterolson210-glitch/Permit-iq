@@ -21,6 +21,7 @@ import Checkout from './pages/Checkout'
 import Projects from './pages/Projects'
 import ProjectDetail from './pages/ProjectDetail'
 import SharedReport from './pages/SharedReport'
+import CoveragePage from './pages/CoveragePage'
 import HowWeVerify from './pages/HowWeVerify'
 import ErrorBoundary from './components/ErrorBoundary'
 import GraceBanner from './components/GraceBanner'
@@ -157,6 +158,14 @@ function AnimatedRoutes() {
           element={
             <PageTransition>
               <TownPermitPage />
+            </PageTransition>
+          }
+        />
+        <Route
+          path="/coverage"
+          element={
+            <PageTransition>
+              <CoveragePage />
             </PageTransition>
           }
         />

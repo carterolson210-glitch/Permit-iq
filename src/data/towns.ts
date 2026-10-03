@@ -116,3 +116,9 @@ if (MA_TOWNS.length !== 351) {
     `[PermitIQ] MA_TOWNS has ${MA_TOWNS.length} entries; expected 351.`
   )
 }
+
+/** Canonical /permits/:slug form for any MA town name — matches the
+ *  hand-authored slugs in townPermits.ts (e.g. "Fall River" -> "fall-river-ma"). */
+export function slugifyTown(name: string): string {
+  return `${name.toLowerCase().replace(/\s+/g, '-')}-ma`
+}

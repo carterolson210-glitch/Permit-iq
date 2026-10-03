@@ -1,12 +1,15 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import {
   TOWN_PROFILES,
   getTownBySlug,
   VERIFIED_TOWN_COUNT,
+  type TownPermitProfile,
 } from '../data/townPermits'
 import { MA_TOWNS } from '../data/towns'
 import CoverageMap from '../components/townproof/CoverageMap'
+import { supabase, isSupabaseConfigured } from '../lib/supabase'
+import { logClientError } from '../lib/monitor'
 
 function formatDate(iso: string): string {
   return new Date(iso + 'T12:00:00').toLocaleDateString('en-US', {
@@ -27,6 +30,49 @@ function setMeta(title: string, description: string) {
   el.content = description
 }
 
+function setRobots(content: string | null) {
+  const el = document.querySelector<HTMLMetaElement>('meta[name="robots"]')
+  if (content === null) {
+    el?.remove()
+    return
+  }
+  const tag = el ?? document.head.appendChild(document.createElement('meta'))
+  tag.name = 'robots'
+  tag.content = content
+}
+
+function setCanonical(path: string | null) {
+  const el = document.querySelector<HTMLLinkElement>('link[rel="canonical"]')
+  if (path === null) {
+    el?.remove()
+    return
+  }
+  const tag = el ?? document.head.appendChild(document.createElement('link'))
+  tag.rel = 'canonical'
+  tag.href = `${window.location.origin}${path}`
+}
+
+/** FAQPage structured data from this town's own hand-verified facts —
+ *  real content, not boilerplate, so only rendered for verified towns. */
+function townFaqJsonLd(profile: TownPermitProfile) {
+  const questions = profile.facts.slice(0, 6).map((f) => ({
+    '@type': 'Question',
+    name: `${f.label} in ${profile.name}, MA — how much is it?`,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: `${f.value} Verified against ${profile.dept.name} on ${formatDate(f.verifiedAt)}. Source: ${f.sourceUrl}`,
+    },
+  }))
+  if (profile.penalty) {
+    questions.push({
+      '@type': 'Question',
+      name: `What happens if you build without a permit in ${profile.name}, MA?`,
+      acceptedAnswer: { '@type': 'Answer', text: profile.penalty.value },
+    })
+  }
+  return { '@context': 'https://schema.org', '@type': 'FAQPage', mainEntity: questions }
+}
+
 /** Turn an arbitrary /permits/:slug into a display name if it's a real MA town. */
 function townNameFromSlug(slug: string): string | undefined {
   const base = slug.replace(/-ma$/, '').replace(/-/g, ' ').toLowerCase()
@@ -40,21 +86,41 @@ export default function TownPermitPage() {
   const name = profile?.name ?? fallbackName
 
   useEffect(() => {
+    let script: HTMLScriptElement | null = null
+
     if (profile) {
       setMeta(
         `${profile.name}, MA Building Permits — Fees, Forms & Contacts | PermitIQ`,
         `${profile.name} building permit fees and requirements, verified against official ${profile.name} municipal sources: ${profile.facts[0].value}. Get a town-specific permit checklist in seconds.`
       )
+      // Real, sourced facts — safe and useful to index.
+      setRobots('index,follow')
+      script = document.head.appendChild(document.createElement('script'))
+      script.type = 'application/ld+json'
+      script.text = JSON.stringify(townFaqJsonLd(profile))
     } else if (name) {
       setMeta(
-        `${name}, MA Building Permits — Town-Specific Checklist | PermitIQ`,
-        `What permits do you need in ${name}, MA? PermitIQ maps your project to ${name}'s local requirements with cited sources. 3 free scans, no credit card.`
+        `${name}, MA Building Permits — Coming Soon | PermitIQ`,
+        `PermitIQ hasn't hand-verified ${name}'s fee schedule yet. Get notified when it's ready, or scan your ${name} project now for AI-researched, cited guidance.`
       )
+      // Near-identical boilerplate across 300+ unverified towns would read
+      // as thin/doorway content to search engines — keep these out of the
+      // index until they're hand-verified, per the trust-first positioning
+      // this whole product is built on.
+      setRobots('noindex,follow')
+    } else {
+      setMeta('Town not found | PermitIQ', 'That is not a Massachusetts city or town PermitIQ recognizes.')
+      setRobots('noindex,follow')
     }
+    setCanonical(name ? `/permits/${slug}` : null)
+
     return () => {
       document.title = 'PermitIQ'
+      setRobots(null)
+      setCanonical(null)
+      script?.remove()
     }
-  }, [profile, name])
+  }, [profile, name, slug])
 
   if (!name) {
     return (
@@ -208,13 +274,23 @@ export default function TownPermitPage() {
           </>
         ) : (
           <section className="mt-8 rounded-2xl border border-slate-200 bg-slate-50 p-6">
-            <p className="text-slate-700">
-              {name} is one of the 351 Massachusetts cities and towns PermitIQ covers.
-              We haven&apos;t completed a hand-verification pass on {name}&apos;s fee
-              schedule yet — we only label data &ldquo;verified&rdquo; after checking it
-              against the town&apos;s own published sources. When you scan a {name}{' '}
-              project, our AI researches the town&apos;s current requirements and shows
-              its sources so you can confirm each item.
+            <h2 className="text-lg font-bold text-slate-900">
+              {name}&apos;s hand-verified permit guide is coming soon
+            </h2>
+            <p className="mt-2 text-slate-700">
+              {name} is one of the 351 Massachusetts cities and towns PermitIQ covers, but
+              we only call a town&apos;s fee schedule &ldquo;verified&rdquo; after checking
+              it against the town&apos;s own published sources — we haven&apos;t gotten to{' '}
+              {name} yet.
+            </p>
+            <ComingSoonCapture town={name} slug={slug} />
+            <p className="mt-5 border-t border-slate-200 pt-4 text-sm text-slate-600">
+              Don&apos;t want to wait?{' '}
+              <Link to="/analyze" className="font-semibold text-blue-700 hover:underline">
+                Scan your {name} project now
+              </Link>{' '}
+              — our AI researches {name}&apos;s current requirements and cites its
+              sources, labeled clearly as AI-researched rather than hand-verified.
             </p>
           </section>
         )}
@@ -239,9 +315,14 @@ export default function TownPermitPage() {
 
         {/* other towns */}
         <section className="mt-12">
-          <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
-            {VERIFIED_TOWN_COUNT} hand-verified town guides
-          </h2>
+          <div className="flex items-baseline justify-between gap-4">
+            <h2 className="text-sm font-bold uppercase tracking-wide text-slate-500">
+              {VERIFIED_TOWN_COUNT} hand-verified town guides
+            </h2>
+            <Link to="/coverage" className="text-xs font-medium text-blue-700 hover:underline">
+              See full coverage map →
+            </Link>
+          </div>
           <div className="mt-3 flex flex-wrap gap-2">
             {TOWN_PROFILES.filter((t) => t.slug !== slug).map((t) => (
               <Link
@@ -287,5 +368,76 @@ function Shell({ children }: { children: React.ReactNode }) {
       </header>
       {children}
     </div>
+  )
+}
+
+/** Email capture shown instead of thin AI-only content on unverified town
+ *  pages, tagged per-town so a future notify-on-verification pass can
+ *  target exactly the people who asked about that town. */
+function ComingSoonCapture({ town, slug }: { town: string; slug: string }) {
+  const [email, setEmail] = useState('')
+  const [state, setState] = useState<'idle' | 'saving' | 'done' | 'error'>('idle')
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
+    const trimmed = email.trim().toLowerCase()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setState('error')
+      return
+    }
+    setState('saving')
+    try {
+      if (isSupabaseConfigured) {
+        await supabase
+          .from('email_subscribers')
+          .insert({ email: trimmed, source: `town_coming_soon:${slug}` })
+      }
+      setState('done')
+    } catch (err) {
+      logClientError('town_notify_signup_failed', err)
+      setState('done')
+    }
+  }
+
+  if (state === 'done') {
+    return (
+      <p className="mt-4 text-sm font-medium text-green-700">
+        You&apos;re on the list — we&apos;ll email you when {town} is verified.
+      </p>
+    )
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="mt-4 flex flex-col gap-2 sm:flex-row sm:items-start">
+      <div className="flex-1">
+        <label htmlFor="notify-email" className="sr-only">
+          Email address
+        </label>
+        <input
+          id="notify-email"
+          type="email"
+          required
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value)
+            if (state === 'error') setState('idle')
+          }}
+          placeholder="you@example.com"
+          className="w-full rounded-lg border border-slate-300 px-4 py-2.5 text-sm shadow-sm placeholder:text-slate-400 focus:border-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-700/30"
+        />
+        {state === 'error' && (
+          <p className="mt-1 text-xs text-red-600" role="alert">
+            Please enter a valid email address.
+          </p>
+        )}
+      </div>
+      <button
+        type="submit"
+        disabled={state === 'saving'}
+        className="inline-flex items-center justify-center rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-800 disabled:opacity-60"
+      >
+        {state === 'saving' ? 'Saving…' : `Notify me about ${town}`}
+      </button>
+    </form>
   )
 }

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://permit-iq-rho.vercel.app/sitemap.xml

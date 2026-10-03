@@ -311,6 +311,7 @@ export default function Landing() {
               <li><a href="#pricing" className="transition-colors hover:text-blue-700">Pricing</a></li>
               <li><a href="#faq" className="transition-colors hover:text-blue-700">FAQ</a></li>
               <li><Link to="/how-we-verify" className="transition-colors hover:text-blue-700">How we verify</Link></li>
+              <li><Link to="/coverage" className="transition-colors hover:text-blue-700">Town coverage</Link></li>
               <li><Link to="/privacy" className="transition-colors hover:text-blue-700">Privacy</Link></li>
               <li><Link to="/terms" className="transition-colors hover:text-blue-700">Terms</Link></li>
             </ul>
